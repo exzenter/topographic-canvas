@@ -133,6 +133,10 @@ $data_attributes = array(
     'rotation-dir-z'      => $attributes['rotationDirZ'] ?? 0,
     'rotation-mode'       => $attributes['rotationMode'] ?? 'constant',
     'pendulum-amplitude'  => $attributes['pendulumAmplitude'] ?? 45,
+    'view-preset'         => $attributes['viewPreset'] ?? '',
+    'base-rotation-x'     => $attributes['baseRotationX'] ?? 0,
+    'base-rotation-y'     => $attributes['baseRotationY'] ?? 0,
+    'base-rotation-z'     => $attributes['baseRotationZ'] ?? 0,
 
     // Mouse Drag
     'drag-enabled'      => ( $attributes['dragEnabled'] ?? true ) ? 'true' : 'false',

@@ -41,8 +41,32 @@ const TRANSITION_TYPES = [
     { label: 'Linear Interpolation (Scroll)', value: 'linear' },
 ];
 
+// View presets with their rotation values (in degrees)
+export const VIEW_PRESETS = {
+    top: { label: 'Top', baseRotationX: 90, baseRotationY: 0, baseRotationZ: 0 },
+    front: { label: 'Front', baseRotationX: 0, baseRotationY: 0, baseRotationZ: 0 },
+    side: { label: 'Side', baseRotationX: 0, baseRotationY: 90, baseRotationZ: 0 },
+    iso: { label: 'Iso', baseRotationX: 30, baseRotationY: 45, baseRotationZ: 0 },
+    iso2: { label: 'Iso 2', baseRotationX: 30, baseRotationY: -45, baseRotationZ: 0 },
+};
+
 // Organized settings by category matching block.json structure
 const SETTINGS_GROUPS = {
+    'View & Rotation': [
+        {
+            label: 'View Preset', key: 'viewPreset', type: 'select', options: [
+                { label: 'None', value: '' },
+                { label: 'Top', value: 'top' },
+                { label: 'Front', value: 'front' },
+                { label: 'Side', value: 'side' },
+                { label: 'Iso', value: 'iso' },
+                { label: 'Iso 2', value: 'iso2' },
+            ]
+        },
+        { label: 'Base Rotation X (°)', key: 'baseRotationX', type: 'range', min: -180, max: 180, step: 1 },
+        { label: 'Base Rotation Y (°)', key: 'baseRotationY', type: 'range', min: -180, max: 180, step: 1 },
+        { label: 'Base Rotation Z (°)', key: 'baseRotationZ', type: 'range', min: -180, max: 180, step: 1 },
+    ],
     'Visual Settings': [
         {
             label: 'Color Mode', key: 'colorMode', type: 'select', options: [

@@ -384,6 +384,22 @@
             "type": "number",
             "default": 1
         },
+        "viewPreset": {
+            "type": "string",
+            "default": ""
+        },
+        "baseRotationX": {
+            "type": "number",
+            "default": 0
+        },
+        "baseRotationY": {
+            "type": "number",
+            "default": 0
+        },
+        "baseRotationZ": {
+            "type": "number",
+            "default": 0
+        },
         "keyframes": {
             "type": "array",
             "default": []

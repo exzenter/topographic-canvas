@@ -12,10 +12,11 @@ import {
     TextControl,
     __experimentalDivider as Divider,
     Button,
+    ButtonGroup,
 } from '@wordpress/components';
 import { useEffect, useRef, useState } from '@wordpress/element';
 import { TopographicCanvas } from './topographic-canvas';
-import KeyframeManager from './keyframe-manager';
+import KeyframeManager, { VIEW_PRESETS } from './keyframe-manager';
 
 export default function Edit({ attributes, setAttributes, clientId }) {
     const containerRef = useRef(null);
@@ -675,6 +676,25 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
                 { /* Rotation Settings Panel */}
                 <PanelBody title={__('Auto Rotation', 'topographic-canvas-block')} initialOpen={false}>
+                    <p style={{ marginBottom: '8px', fontWeight: '500' }}>{__('View Presets', 'topographic-canvas-block')}</p>
+                    <ButtonGroup style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '20px' }}>
+                        {Object.entries(VIEW_PRESETS).map(([key, preset]) => (
+                            <Button
+                                key={key}
+                                variant={attributes.viewPreset === key ? 'primary' : 'secondary'}
+                                onClick={() => setAttributes({
+                                    viewPreset: key,
+                                    baseRotationX: preset.baseRotationX,
+                                    baseRotationY: preset.baseRotationY,
+                                    baseRotationZ: preset.baseRotationZ,
+                                })}
+                                isSmall
+                            >
+                                {preset.label}
+                            </Button>
+                        ))}
+                    </ButtonGroup>
+                    <Divider />
                     <ToggleControl
                         label={__('Enable Auto Rotation', 'topographic-canvas-block')}
                         checked={attributes.autoRotate}

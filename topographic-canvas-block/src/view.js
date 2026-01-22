@@ -89,6 +89,12 @@ function initTopographicCanvasBlocks() {
             rotationMode: container.dataset.rotationMode || 'constant',
             pendulumAmplitude: parseInt(container.dataset.pendulumAmplitude) || 45,
 
+            // View Presets
+            viewPreset: container.dataset.viewPreset || '',
+            baseRotationX: parseFloat(container.dataset.baseRotationX) || 0,
+            baseRotationY: parseFloat(container.dataset.baseRotationY) || 0,
+            baseRotationZ: parseFloat(container.dataset.baseRotationZ) || 0,
+
             // Mouse Drag
             dragEnabled: container.dataset.dragEnabled === 'true',
             dragSensitivity: parseFloat(container.dataset.dragSensitivity) || 1,
@@ -211,6 +217,7 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
     const baseConfig = { ...canvasInstance.config };
     let currentValues = { ...baseConfig };
     let lastActiveKeyframe = null;
+    let lastScrollPos = window.scrollY; // Track last scroll position to detect skipped keyframes
 
     // Animation State
     let animationState = {
@@ -371,7 +378,32 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
         }
 
         // Logic 2: Passed a keyframe (StartKF) -> Trigger Duration Transition
+        // Fix for fast scrolling: Find all keyframes passed between lastScrollPos and scrollPos
         if (startKF && (!endKF || endKF.transitionType !== 'linear')) {
+            // Find keyframes that were crossed during this scroll event
+            const scrollDirection = scrollPos > lastScrollPos ? 1 : -1;
+            const minPos = Math.min(lastScrollPos, scrollPos);
+            const maxPos = Math.max(lastScrollPos, scrollPos);
+
+            // Get all standard keyframes that were crossed (between last and current scroll)
+            const crossedKFs = sortedKFs.filter(kf =>
+                kf.computedStart > minPos && kf.computedStart <= maxPos
+            );
+
+            // If scrolling forward, sort ascending; if backward, sort descending
+            if (scrollDirection < 0) {
+                crossedKFs.reverse();
+            }
+
+            // Apply all crossed keyframes in order (for fast scroll)
+            crossedKFs.forEach(kf => {
+                if (kf.id !== (lastActiveKeyframe ? lastActiveKeyframe.id : null)) {
+                    // For intermediate keyframes during fast scroll, apply instantly
+                    triggerTransition(kf.settings, 0);
+                }
+            });
+
+            // Now apply the final/current keyframe with its proper duration
             if (startKF.id !== (lastActiveKeyframe ? lastActiveKeyframe.id : null)) {
                 lastActiveKeyframe = startKF;
                 let duration = startKF.transitionType === 'duration' ? (startKF.transitionDuration || 500) : 0;
@@ -441,6 +473,7 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
         // Keyframe System Update
         if (scrollKeyframes.length > 0) {
             updateCanvas();
+            lastScrollPos = currentScrollY; // Track for fast scroll detection
         }
     }, { passive: true });
 

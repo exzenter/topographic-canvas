@@ -125,9 +125,9 @@ export class TopographicCanvas {
             targetRotationX: 0,
             targetRotationY: 0,
             targetRotationZ: 0,
-            baseRotationX: 0,
-            baseRotationY: 0,
-            baseRotationZ: 0,
+            baseRotationX: this.config.baseRotationX ? this.config.baseRotationX * Math.PI / 180 : 0,
+            baseRotationY: this.config.baseRotationY ? this.config.baseRotationY * Math.PI / 180 : 0,
+            baseRotationZ: this.config.baseRotationZ ? this.config.baseRotationZ * Math.PI / 180 : 0,
             velocityX: 0,
             velocityY: 0,
             isDragging: false,
@@ -205,8 +205,54 @@ export class TopographicCanvas {
         // Deep merge or simple spread? Simple spread is safer for performance if structure is flat-ish
         this.config = { ...this.config, ...newConfig };
 
+        // Handle view preset - apply base rotations from preset
+        if (newConfig.viewPreset !== undefined) {
+            this.setViewPreset(newConfig.viewPreset);
+        }
+
+        // Handle direct base rotation updates (in degrees, convert to radians)
+        if (newConfig.baseRotationX !== undefined) {
+            this.state.baseRotationX = newConfig.baseRotationX * Math.PI / 180;
+        }
+        if (newConfig.baseRotationY !== undefined) {
+            this.state.baseRotationY = newConfig.baseRotationY * Math.PI / 180;
+        }
+        if (newConfig.baseRotationZ !== undefined) {
+            this.state.baseRotationZ = newConfig.baseRotationZ * Math.PI / 180;
+        }
+
         // Update caches if necessary
         this.updateColorCache();
+    }
+
+    /**
+     * Set the view to a preset rotation
+     * @param {string} preset - Preset name: 'top', 'front', 'side', 'iso', 'iso2'
+     */
+    setViewPreset(preset) {
+        const presets = {
+            top: { x: 90, y: 0, z: 0 },
+            front: { x: 0, y: 0, z: 0 },
+            side: { x: 0, y: 90, z: 0 },
+            iso: { x: 30, y: 45, z: 0 },
+            iso2: { x: 30, y: -45, z: 0 },
+        };
+
+        const p = presets[preset];
+        if (!p) return;
+
+        const toRad = deg => deg * Math.PI / 180;
+
+        // Set base rotation
+        this.state.baseRotationX = toRad(p.x);
+        this.state.baseRotationY = toRad(p.y);
+        this.state.baseRotationZ = toRad(p.z);
+
+        // Reset target/velocity for clean preset application
+        this.state.targetRotationX = 0;
+        this.state.targetRotationY = 0;
+        this.state.velocityX = 0;
+        this.state.velocityY = 0;
     }
 
     setupEventListeners() {
