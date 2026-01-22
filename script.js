@@ -1422,54 +1422,12 @@ function updateUIFromConfig() {
         document.getElementById('color-color').click();
     }
 
-    // View Presets
-    window.setViewPreset = function (preset) {
-        // Disable auto-rotation
-        config.autoRotate = false;
-        document.getElementById('auto-rotate').checked = false;
 
-        // Reset base rotation
-        state.baseRotationX = 0;
-        state.baseRotationY = 0;
-        state.baseRotationZ = 0;
-        state.velocityX = 0;
-        state.velocityY = 0;
 
-        // Set target rotation based on preset
-        const toRad = deg => deg * Math.PI / 180;
+    // Update rotation sliders if they exist (though they control animation params, not absolute rotation usually)
+    // Actually, rotation-dir-x/y/z control auto-rotation direction, not current rotation.
+    // So we don't need to update those sliders.
 
-        switch (preset) {
-            case 'top':
-                state.targetRotationX = toRad(90);
-                state.targetRotationY = 0;
-                state.targetRotationZ = 0;
-                break;
-            case 'front':
-                state.targetRotationX = 0;
-                state.targetRotationY = 0;
-                state.targetRotationZ = 0;
-                break;
-            case 'side':
-                state.targetRotationX = 0;
-                state.targetRotationY = toRad(90);
-                state.targetRotationZ = 0;
-                break;
-            case 'iso':
-                state.targetRotationX = toRad(30);
-                state.targetRotationY = toRad(45);
-                state.targetRotationZ = 0;
-                break;
-            case 'iso2':
-                state.targetRotationX = toRad(30);
-                state.targetRotationY = toRad(-45);
-                state.targetRotationZ = 0;
-                break;
-        }
-
-        // Update rotation sliders if they exist (though they control animation params, not absolute rotation usually)
-        // Actually, rotation-dir-x/y/z control auto-rotation direction, not current rotation.
-        // So we don't need to update those sliders.
-    };
     document.getElementById('line-color').value = config.lineColor;
     updateRangeUI('hue-start', config.hueStart, '°');
     updateRangeUI('hue-end', config.hueEnd, '°');
@@ -1567,6 +1525,53 @@ function updateUIFromConfig() {
     document.getElementById('mouse-wheel-zoom').checked = config.mouseWheelZoom;
     updateRangeUI('zoom-sensitivity', config.zoomSensitivity, '', 1);
 }
+
+
+// View Presets (Global)
+window.setViewPreset = function (preset) {
+    // Disable auto-rotation
+    config.autoRotate = false;
+    const autoRotateCb = document.getElementById('auto-rotate');
+    if (autoRotateCb) autoRotateCb.checked = false;
+
+    // Reset target rotation
+    state.targetRotationX = 0;
+    state.targetRotationY = 0;
+    state.targetRotationZ = 0;
+    state.velocityX = 0;
+    state.velocityY = 0;
+
+    // Set base rotation based on preset
+    const toRad = deg => deg * Math.PI / 180;
+
+    switch (preset) {
+        case 'top':
+            state.baseRotationX = toRad(90);
+            state.baseRotationY = 0;
+            state.baseRotationZ = 0;
+            break;
+        case 'front':
+            state.baseRotationX = 0;
+            state.baseRotationY = 0;
+            state.baseRotationZ = 0;
+            break;
+        case 'side':
+            state.baseRotationX = 0;
+            state.baseRotationY = toRad(90);
+            state.baseRotationZ = 0;
+            break;
+        case 'iso':
+            state.baseRotationX = toRad(30);
+            state.baseRotationY = toRad(45);
+            state.baseRotationZ = 0;
+            break;
+        case 'iso2':
+            state.baseRotationX = toRad(30);
+            state.baseRotationY = toRad(-45);
+            state.baseRotationZ = 0;
+            break;
+    }
+};
 
 function randomizeMotion() {
     // Randomize rotation settings
