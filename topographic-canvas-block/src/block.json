@@ -108,6 +108,14 @@
             "type": "number",
             "default": 280
         },
+        "sphereSizeMode": {
+            "type": "string",
+            "default": "px"
+        },
+        "sphereSizeRem": {
+            "type": "number",
+            "default": 17.5
+        },
         "noiseScale": {
             "type": "number",
             "default": 2

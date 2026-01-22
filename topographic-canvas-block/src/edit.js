@@ -316,13 +316,33 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                         min={60}
                         max={300}
                     />
-                    <RangeControl
-                        label={__('Sphere Size', 'topographic-canvas-block')}
-                        value={attributes.sphereSize}
-                        onChange={(value) => setAttributes({ sphereSize: value })}
-                        min={100}
-                        max={500}
+                    <ToggleControl
+                        label={__('Use REM Size', 'topographic-canvas-block')}
+                        help={attributes.sphereSizeMode === 'rem'
+                            ? __('Sphere size scales with viewport', 'topographic-canvas-block')
+                            : __('Fixed pixel size', 'topographic-canvas-block')
+                        }
+                        checked={attributes.sphereSizeMode === 'rem'}
+                        onChange={(value) => setAttributes({ sphereSizeMode: value ? 'rem' : 'px' })}
                     />
+                    {attributes.sphereSizeMode === 'rem' ? (
+                        <RangeControl
+                            label={__('Sphere Size (rem)', 'topographic-canvas-block')}
+                            value={attributes.sphereSizeRem}
+                            onChange={(value) => setAttributes({ sphereSizeRem: value })}
+                            min={5}
+                            max={50}
+                            step={0.5}
+                        />
+                    ) : (
+                        <RangeControl
+                            label={__('Sphere Size (px)', 'topographic-canvas-block')}
+                            value={attributes.sphereSize}
+                            onChange={(value) => setAttributes({ sphereSize: value })}
+                            min={100}
+                            max={500}
+                        />
+                    )}
                     <RangeControl
                         label={__('Line Width', 'topographic-canvas-block')}
                         value={attributes.lineWidth}
