@@ -22,6 +22,8 @@ export class TopographicCanvas {
             lineDensity: 60,
             lineSegments: 150,
             sphereSize: 280,
+            useSphereSizeRem: false,
+            sphereSizeRem: 15,
             noiseScale: 2,
             noiseAmplitude: 30,
             animationSpeed: 50,
@@ -114,6 +116,17 @@ export class TopographicCanvas {
             mouseWheelZoom: false,
             zoomSensitivity: 1,
 
+            // Text Mode
+            textChar: '5',
+
+            // Shape Morphing
+            morphEnabled: false,
+            morphTargetShape: 'cube',
+            morphProgress: 0,
+            morphDuration: 1500,
+            morphAutoPlay: false,
+            morphLoop: false,
+
             ...config,
         };
 
@@ -147,6 +160,14 @@ export class TopographicCanvas {
             centerX: 0,
             centerY: 0,
             zoomFactor: 1,
+            calculatedRadius: 280,
+
+            // Morph state
+            morphProgress: 0,
+            morphStartTime: null,
+            isMorphing: false,
+            morphSourceShape: 'sphere',
+            morphDirection: 1, // 1 = forward, -1 = reverse
         };
 
         // Caches
@@ -160,6 +181,16 @@ export class TopographicCanvas {
             lineColorRGB: { r: 255, g: 255, b: 255 },
             lastLineColor: '#ffffff',
         };
+
+        // Cache for expensive text scanning
+        this.textCache = {
+            char: null,
+            lines: null,
+            density: null,
+            segments: null,
+            cachedAt: 0
+        };
+        this.offscreenCanvas = document.createElement('canvas'); // Reuse for text scanning
 
         // Initialize noise
         this.noise = new SimplexNoise();
@@ -223,6 +254,34 @@ export class TopographicCanvas {
 
         // Update caches if necessary
         this.updateColorCache();
+
+        // Handle morph source shape sync when main shape changes
+        if (newConfig.shape !== undefined && !this.state.isMorphing) {
+            this.state.morphSourceShape = newConfig.shape;
+        }
+
+        // Handle morph progress from config
+        if (newConfig.morphProgress !== undefined) {
+            this.state.morphProgress = newConfig.morphProgress;
+        }
+
+        // Handle morph auto-play start
+        if (newConfig.morphAutoPlay !== undefined && newConfig.morphAutoPlay && this.config.morphEnabled) {
+            if (!this.state.isMorphing) {
+                this.startMorph(this.config.morphTargetShape, this.config.morphDuration);
+            }
+        }
+
+        // Recalculate radius
+        this.state.calculatedRadius = this.calculateRadius();
+    }
+
+    calculateRadius() {
+        if (this.config.useSphereSizeRem) {
+            const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+            return this.config.sphereSizeRem * rootFontSize;
+        }
+        return this.config.sphereSize;
     }
 
     /**
@@ -297,6 +356,9 @@ export class TopographicCanvas {
 
         this.state.centerX = this.state.width / 2;
         this.state.centerY = this.state.height / 2;
+
+        // Recalculate radius on resize as root font size might change
+        this.state.calculatedRadius = this.calculateRadius();
     }
 
     handleMouseDown(e) {
@@ -717,6 +779,218 @@ export class TopographicCanvas {
                 return lines;
             },
 
+            ellipsoid: (radius, numLines, segments, time) => {
+                const lines = [];
+                for (let i = 0; i < numLines; i++) {
+                    const phi = (i / (numLines - 1)) * Math.PI;
+                    const points = [];
+                    for (let j = 0; j <= segments; j++) {
+                        const theta = (j / segments) * Math.PI * 2;
+                        const x = Math.sin(phi) * Math.cos(theta);
+                        const y = Math.cos(phi) * 1.5; // Stretch Y
+                        const z = Math.sin(phi) * Math.sin(theta);
+                        points.push(this.applyDisplacement(x, y, z, radius, time));
+                    }
+                    lines.push({ points, index: i });
+                }
+                return lines;
+            },
+
+            capsule: (radius, numLines, segments, time) => {
+                const lines = [];
+                const r = radius * 0.5; // Cylinder radius
+                const h = radius * 1.5; // Cylinder height
+
+                for (let i = 0; i < numLines; i++) {
+                    const t = i / (numLines - 1); // 0 to 1
+                    const points = [];
+
+                    // Parametric capsule logic
+                    // We treat it as 3 sections: top hemisphere, cylinder body, bottom hemisphere
+                    // But simpler: map phi from 0 to PI, but stretch the middle part
+
+                    let y, ringRadius;
+
+                    // Simplified approach: map t to vertical position directly
+                    // Top: t=0 -> y=h/2+r
+                    // Bottom: t=1 -> y=-(h/2+r)
+
+                    if (t < 0.2) {
+                        // Top Cap
+                        const capT = t / 0.2; // 0 to 1
+                        const phi = capT * (Math.PI / 2);
+                        y = (h / 2) + r * Math.cos(phi);
+                        ringRadius = r * Math.sin(phi);
+                    } else if (t > 0.8) {
+                        // Bottom Cap
+                        const capT = (t - 0.8) / 0.2; // 0 to 1
+                        const phi = (Math.PI / 2) + capT * (Math.PI / 2);
+                        y = -(h / 2) + r * Math.cos(phi);
+                        ringRadius = r * Math.sin(phi);
+                    } else {
+                        // Cylinder Body
+                        const bodyT = (t - 0.2) / 0.6; // 0 to 1
+                        y = (h / 2) - bodyT * h;
+                        ringRadius = r;
+                    }
+
+                    for (let j = 0; j <= segments; j++) {
+                        const theta = (j / segments) * Math.PI * 2;
+                        const x = ringRadius * Math.cos(theta);
+                        const z = ringRadius * Math.sin(theta);
+
+                        // Normalized for noise lookup (approximate)
+                        const nx = x / r;
+                        const ny = y / (h / 2 + r);
+                        const nz = z / r;
+
+                        const scale = this.config.noiseScale;
+                        const amp = this.config.noiseAmplitude / 100;
+                        const modes = this.getDisplacementModes();
+                        const displaceFn = modes[this.config.mode] || modes.wavy;
+                        const displacement = displaceFn(nx, ny, nz, time, scale, amp, this.state.noiseOffset);
+
+                        points.push({
+                            x: x * (1 + displacement),
+                            y: y * (1 + displacement),
+                            z: z * (1 + displacement),
+                            displacement
+                        });
+                    }
+                    lines.push({ points, index: i });
+                }
+                return lines;
+            },
+
+
+
+            mobius: (radius, numLines, segments, time) => {
+                const lines = [];
+                const R = radius * 0.8;
+                const width = radius * 0.3;
+
+                for (let i = 0; i < numLines; i++) {
+                    const t = (i / (numLines - 1)) * 2 - 1; // -1 to 1 (width of strip)
+                    const points = [];
+                    for (let j = 0; j <= segments; j++) {
+                        const u = (j / segments) * Math.PI * 2; // 0 to 2PI (around loop)
+
+                        const x = (R + width * t * Math.cos(u / 2)) * Math.cos(u);
+                        const y = (R + width * t * Math.cos(u / 2)) * Math.sin(u);
+                        const z = width * t * Math.sin(u / 2);
+
+                        // Calculate normal-ish for noise (simplified)
+                        const nx = x / R;
+                        const ny = y / R;
+                        const nz = z / width;
+
+                        const scale = this.config.noiseScale;
+                        const amp = this.config.noiseAmplitude / 100;
+                        const modes = this.getDisplacementModes();
+                        const displaceFn = modes[this.config.mode] || modes.wavy;
+                        const displacement = displaceFn(nx, ny, nz, time, scale, amp, this.state.noiseOffset);
+
+                        points.push({
+                            x: x + nx * displacement * 50, // Push out along normal approx
+                            y: y + ny * displacement * 50,
+                            z: z + nz * displacement * 50,
+                            displacement
+                        });
+                    }
+                    lines.push({ points, index: i });
+                }
+                return lines;
+            },
+
+
+
+            heart: (radius, numLines, segments, time) => {
+                const lines = [];
+                const size = radius * 0.05; // Scaling factor
+
+                for (let i = 0; i < numLines; i++) {
+                    const phi = (i / (numLines - 1)) * Math.PI; // 0 to PI
+                    const points = [];
+                    for (let j = 0; j <= segments; j++) {
+                        const theta = (j / segments) * Math.PI * 2; // 0 to 2PI
+
+                        // Parametric Heart Formula
+                        // x = 16sin^3(t)
+                        // y = 13cos(t) - 5cos(2t) - 2cos(3t) - cos(4t)
+                        // But we need 3D. A common one is rotating a heart curve or a specific 3D surface.
+                        // Using a pseudo-spherical heart mapping:
+
+                        const x = 16 * Math.pow(Math.sin(theta), 3) * Math.sin(phi);
+                        const y = (13 * Math.cos(theta) - 5 * Math.cos(2 * theta) - 2 * Math.cos(3 * theta) - Math.cos(4 * theta)) * Math.sin(phi);
+                        const z = 10 * Math.cos(phi); // Simple inflation along Z
+
+                        // Correct orientation
+                        const rX = x * size;
+                        const rY = -y * size; // Flip Y to stand up
+                        const rZ = z * size;
+
+                        // Apply displacement
+                        // Normalize approximately for noise
+                        const nx = rX / radius;
+                        const ny = rY / radius;
+                        const nz = rZ / radius;
+
+                        const scale = this.config.noiseScale;
+                        const amp = this.config.noiseAmplitude / 100;
+                        const modes = this.getDisplacementModes();
+                        const displaceFn = modes[this.config.mode] || modes.wavy;
+                        const displacement = displaceFn(nx, ny, nz, time, scale, amp, this.state.noiseOffset);
+
+                        points.push({
+                            x: rX * (1 + displacement),
+                            y: rY * (1 + displacement),
+                            z: rZ * (1 + displacement),
+                            displacement
+                        });
+                    }
+                    lines.push({ points, index: i });
+                }
+                return lines;
+            },
+
+            klein: (radius, numLines, segments, time) => {
+                const lines = [];
+                const size = radius * 0.15;
+
+                for (let i = 0; i < numLines; i++) {
+                    const u = (i / (numLines - 1)) * Math.PI; // 0 to PI
+                    const points = [];
+                    for (let j = 0; j <= segments; j++) {
+                        const v = (j / segments) * Math.PI * 2; // 0 to 2PI
+
+                        // Gray's Klein Bottle
+                        const x = (3 + Math.cos(u / 2) * Math.sin(v) - Math.sin(u / 2) * Math.sin(2 * v)) * Math.cos(u);
+                        const y = (3 + Math.cos(u / 2) * Math.sin(v) - Math.sin(u / 2) * Math.sin(2 * v)) * Math.sin(u);
+                        const z = Math.sin(u / 2) * Math.sin(v) + Math.cos(u / 2) * Math.sin(2 * v);
+
+                        const rX = x * size;
+                        const rY = y * size;
+                        const rZ = z * size;
+
+                        // Displacement
+                        const scale = this.config.noiseScale;
+                        const amp = this.config.noiseAmplitude / 100;
+                        const modes = this.getDisplacementModes();
+                        const displaceFn = modes[this.config.mode] || modes.wavy;
+                        const displacement = displaceFn(rX / size, rY / size, rZ / size, time, scale, amp, this.state.noiseOffset);
+
+                        points.push({
+                            x: rX * (1 + displacement * 0.3),
+                            y: rY * (1 + displacement * 0.3),
+                            z: rZ * (1 + displacement * 0.3),
+                            displacement
+                        });
+                    }
+                    lines.push({ points, index: i });
+                }
+                return lines;
+            },
+
             cone: (radius, numLines, segments, time) => {
                 const lines = [];
                 const size = radius * 0.8;
@@ -737,6 +1011,161 @@ export class TopographicCanvas {
                     lines.push({ points, index: i });
                 }
                 return lines;
+            },
+
+            number: (radius, numLines, segments, time) => {
+                const char = this.config.textChar || '5';
+
+                // --- CACHING STRATEGY ---
+                // Re-scanning text pixels is too slow for 60fps.
+                // We cache the "base topology" (points list) and only re-calculate it if:
+                // 1. Character changed
+                // 2. Line Density changed
+                // 3. Line Segments changed
+                // The 'time' based displacement is applied to the cached points every frame.
+
+                const cacheValid =
+                    this.textCache.char === char &&
+                    this.textCache.density === numLines &&
+                    this.textCache.segments === segments &&
+                    this.textCache.lines !== null;
+
+                if (!cacheValid) {
+                    console.time('TextScan');
+                    // 1. Setup Offscreen Canvas
+                    const size = 512; // High res for good scanning
+                    this.offscreenCanvas.width = size;
+                    this.offscreenCanvas.height = size;
+                    const ctx = this.offscreenCanvas.getContext('2d');
+
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0, 0, size, size);
+
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    // Use Inter Extra Black if available, fallback to sans-serif
+                    ctx.font = '900 400px Inter, "Heebo", sans-serif';
+                    ctx.fillText(char, size / 2, size / 2);
+
+                    const imageData = ctx.getImageData(0, 0, size, size).data;
+
+                    // 2. Scan for points
+                    const newLines = [];
+                    // We map 'numLines' to vertical Y position
+
+                    for (let i = 0; i < numLines; i++) {
+                        // Scan line Y position (0 to size-1)
+                        const yNorm = i / (numLines - 1);
+                        const y = Math.floor(yNorm * (size - 1));
+
+                        const points = [];
+                        let isInside = false;
+
+                        // We walk across the X axis
+                        // To keep point count somewhat consistent with 'segments', we skip pixels
+                        const step = Math.max(1, Math.floor(size / segments));
+
+                        for (let x = 0; x < size; x += step) {
+                            const index = (y * size + x) * 4;
+                            const brightness = imageData[index]; // R channel
+
+                            // Simple threshold
+                            if (brightness > 128) {
+                                // Mapped to -1..1 range
+                                const pX = (x / size) * 2 - 1;
+                                const pY = (1 - yNorm) * 2 - 1; // Flip Y so up is up
+                                // Z is 0 (flat text)
+                                const pZ = 0;
+
+                                points.push({
+                                    baseX: pX,
+                                    baseY: pY,
+                                    baseZ: pZ
+                                });
+                                isInside = true;
+                            } else {
+                                if (isInside) {
+                                    // Gap in text (e.g. middle of '0')
+                                    // We could break the line here or simple keep points empty
+                                    // For this simple engine, we just keep valid points. 
+                                    // Long gaps might create "flying lines" if we aren't careful, 
+                                    // but usually 'lines' array is one single path per row.
+                                    // To support holes correctly, we'd need multiple 'lines' object per row i,
+                                    // but our engine expects 1 line object per i.
+                                    // Hack: We add a 'gap' marker point? 
+                                    // Or just let it connect (looks like wireframe text).
+                                    // Let's trying adding "null" points to break valid segments? 
+                                    // Render loop doesn't handle nulls well.
+                                    // Better approach: Just accept the wireframe connection across the gap,
+                                    // OR split into multiple lines object with same index.
+                                    // Let's try splitting!
+
+                                    if (points.length > 0) {
+                                        newLines.push({ points: [...points], index: i }); // Flush current segment
+                                        points.length = 0; // Clear
+                                    }
+                                    isInside = false;
+                                }
+                            }
+                        }
+                        if (points.length > 0) {
+                            newLines.push({ points: [...points], index: i });
+                        }
+                    }
+
+                    // Filter empty lines to save perf
+                    // Update Cache
+                    this.textCache = {
+                        char: char,
+                        density: numLines,
+                        segments: segments,
+                        lines: newLines,
+                        cachedAt: Date.now()
+                    };
+                    console.timeEnd('TextScan');
+                }
+
+                // --- GENERATE FRAME ---
+                // Apply displacement to cached points
+                const finalTextLines = [];
+                const radiusScale = radius * 0.8; // Scale char to fit sphere radius
+
+                this.textCache.lines.forEach(lineObj => {
+                    const currentPoints = [];
+                    lineObj.points.forEach(pt => {
+                        const x = pt.baseX * radiusScale;
+                        const y = pt.baseY * radiusScale;
+                        const z = pt.baseZ * radiusScale; // Flat by default
+
+                        // Apply Noise Displacement
+                        // Map 3D pos to noise space
+                        // We use a simplified normal (Z-up) or radial?
+                        // For flat text, maybe just Z displacement looks best?
+                        // Or general 3D displacement.
+
+                        const scale = this.config.noiseScale;
+                        const amp = this.config.noiseAmplitude / 100;
+                        const modes = this.getDisplacementModes();
+                        const displaceFn = modes[this.config.mode] || modes.wavy;
+
+                        // Noise offset by some Z to make it distinct
+                        const displacement = displaceFn(pt.baseX, pt.baseY, 0.5, time, scale, amp, this.state.noiseOffset);
+
+                        currentPoints.push({
+                            x: x * (1 + displacement * 0.2), // Subtle distortion
+                            y: y * (1 + displacement * 0.2),
+                            z: z + (displacement * radius * 0.5), // Main effect is Z-extrusion
+                            displacement
+                        });
+                    });
+
+                    if (currentPoints.length > 1) {
+                        finalTextLines.push({ points: currentPoints, index: lineObj.index });
+                    }
+                });
+
+                return finalTextLines;
             },
         };
     }
@@ -770,6 +1199,293 @@ export class TopographicCanvas {
             const lightness = 50 + depth * 20;
             return `hsla(${hue}, ${saturation}%, ${lightness}%, ${alpha * depthAlpha})`;
         }
+    }
+
+    /**
+     * Base shape point generators - return normalized {x, y, z} WITHOUT displacement.
+     * Used for morphing: interpolate between base points, then apply displacement.
+     */
+    getBaseShapeGenerators() {
+        return {
+            sphere: (i, j, numLines, segments) => {
+                const phi = (i / (numLines - 1)) * Math.PI;
+                const theta = (j / segments) * Math.PI * 2;
+                return {
+                    x: Math.sin(phi) * Math.cos(theta),
+                    y: Math.cos(phi),
+                    z: Math.sin(phi) * Math.sin(theta),
+                    scale: 1.0, // Scale factor for radius
+                };
+            },
+
+            cube: (i, j, numLines, segments) => {
+                const t = (i / (numLines - 1)) * 2 - 1;
+                const y = t;
+                const angle = (j / segments) * Math.PI * 2;
+                let x, z;
+
+                const normalized = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+                if (normalized < Math.PI / 4 || normalized >= 7 * Math.PI / 4) {
+                    x = 1; z = Math.tan(normalized);
+                } else if (normalized < 3 * Math.PI / 4) {
+                    z = 1; x = 1 / Math.tan(normalized);
+                } else if (normalized < 5 * Math.PI / 4) {
+                    x = -1; z = -Math.tan(normalized);
+                } else {
+                    z = -1; x = -1 / Math.tan(normalized);
+                }
+
+                x = Math.max(-1, Math.min(1, x));
+                z = Math.max(-1, Math.min(1, z));
+
+                return { x, y, z, scale: 0.8 };
+            },
+
+            pyramid: (i, j, numLines, segments) => {
+                const t = i / (numLines - 1);
+                const y = 1 - t * 2;
+                const pyramidScale = t;
+                const angle = (j / segments) * Math.PI * 2;
+                let x, z;
+
+                const normalized = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+                if (normalized < Math.PI / 4 || normalized >= 7 * Math.PI / 4) {
+                    x = 1; z = Math.tan(normalized);
+                } else if (normalized < 3 * Math.PI / 4) {
+                    z = 1; x = 1 / Math.tan(normalized);
+                } else if (normalized < 5 * Math.PI / 4) {
+                    x = -1; z = -Math.tan(normalized);
+                } else {
+                    z = -1; x = -1 / Math.tan(normalized);
+                }
+
+                x = Math.max(-1, Math.min(1, x)) * pyramidScale;
+                z = Math.max(-1, Math.min(1, z)) * pyramidScale;
+
+                return { x, y, z, scale: 0.9 };
+            },
+
+            plane: (i, j, numLines, segments) => {
+                const z = ((i / (numLines - 1)) * 2 - 1);
+                const x = (j / segments) * 2 - 1;
+                const y = 0;
+                return { x, y, z, scale: 1.2 };
+            },
+
+            torus: (i, j, numLines, segments) => {
+                const R = 0.7; // Major radius ratio
+                const r = 0.3; // Minor radius ratio
+                const phi = (i / (numLines - 1)) * Math.PI * 2;
+                const theta = (j / segments) * Math.PI * 2;
+
+                const x = (R + r * Math.cos(phi)) * Math.cos(theta);
+                const y = r * Math.sin(phi);
+                const z = (R + r * Math.cos(phi)) * Math.sin(theta);
+
+                return { x, y, z, scale: 1.0 };
+            },
+
+            cylinder: (i, j, numLines, segments) => {
+                const t = (i / (numLines - 1)) * 2 - 1;
+                const y = t;
+                const theta = (j / segments) * Math.PI * 2;
+                const x = Math.cos(theta);
+                const z = Math.sin(theta);
+                return { x, y, z, scale: 0.7 };
+            },
+
+            cone: (i, j, numLines, segments) => {
+                const t = i / (numLines - 1);
+                const y = 1 - t * 2;
+                const coneScale = t;
+                const theta = (j / segments) * Math.PI * 2;
+                const x = Math.cos(theta) * coneScale;
+                const z = Math.sin(theta) * coneScale;
+                return { x, y, z, scale: 0.8 };
+            },
+
+            ellipsoid: (i, j, numLines, segments) => {
+                const phi = (i / (numLines - 1)) * Math.PI;
+                const theta = (j / segments) * Math.PI * 2;
+                return {
+                    x: Math.sin(phi) * Math.cos(theta),
+                    y: Math.cos(phi) * 1.5,
+                    z: Math.sin(phi) * Math.sin(theta),
+                    scale: 1.0,
+                };
+            },
+
+            capsule: (i, j, numLines, segments) => {
+                const r = 0.5;
+                const h = 1.5;
+                const t = i / (numLines - 1);
+                let y, ringRadius;
+
+                if (t < 0.2) {
+                    const capT = t / 0.2;
+                    const phi = capT * (Math.PI / 2);
+                    y = (h / 2) + r * Math.cos(phi);
+                    ringRadius = r * Math.sin(phi);
+                } else if (t > 0.8) {
+                    const capT = (t - 0.8) / 0.2;
+                    const phi = (Math.PI / 2) + capT * (Math.PI / 2);
+                    y = -(h / 2) + r * Math.cos(phi);
+                    ringRadius = r * Math.sin(phi);
+                } else {
+                    const bodyT = (t - 0.2) / 0.6;
+                    y = (h / 2) - bodyT * h;
+                    ringRadius = r;
+                }
+
+                const theta = (j / segments) * Math.PI * 2;
+                const x = ringRadius * Math.cos(theta);
+                const z = ringRadius * Math.sin(theta);
+
+                return { x, y, z, scale: 1.0 };
+            },
+
+            mobius: (i, j, numLines, segments) => {
+                const R = 0.8;
+                const width = 0.3;
+                const t = (i / (numLines - 1)) * 2 - 1;
+                const u = (j / segments) * Math.PI * 2;
+
+                const x = (R + width * t * Math.cos(u / 2)) * Math.cos(u);
+                const y = (R + width * t * Math.cos(u / 2)) * Math.sin(u);
+                const z = width * t * Math.sin(u / 2);
+
+                return { x, y, z, scale: 1.0 };
+            },
+
+            heart: (i, j, numLines, segments) => {
+                const phi = (i / (numLines - 1)) * Math.PI;
+                const theta = (j / segments) * Math.PI * 2;
+
+                const size = 0.05;
+                const x = 16 * Math.pow(Math.sin(theta), 3) * Math.sin(phi) * size;
+                const y = -(13 * Math.cos(theta) - 5 * Math.cos(2 * theta) - 2 * Math.cos(3 * theta) - Math.cos(4 * theta)) * Math.sin(phi) * size;
+                const z = 10 * Math.cos(phi) * size;
+
+                return { x, y, z, scale: 1.0 };
+            },
+
+            klein: (i, j, numLines, segments) => {
+                const u = (i / (numLines - 1)) * Math.PI;
+                const v = (j / segments) * Math.PI * 2;
+                const size = 0.15;
+
+                const x = (3 + Math.cos(u / 2) * Math.sin(v) - Math.sin(u / 2) * Math.sin(2 * v)) * Math.cos(u) * size;
+                const y = (3 + Math.cos(u / 2) * Math.sin(v) - Math.sin(u / 2) * Math.sin(2 * v)) * Math.sin(u) * size;
+                const z = (Math.sin(u / 2) * Math.sin(v) + Math.cos(u / 2) * Math.sin(2 * v)) * size;
+
+                return { x, y, z, scale: 1.0 };
+            },
+
+            number: (i, j, numLines, segments) => {
+                // Fallback to sphere for number shape (text requires special handling)
+                const phi = (i / (numLines - 1)) * Math.PI;
+                const theta = (j / segments) * Math.PI * 2;
+                return {
+                    x: Math.sin(phi) * Math.cos(theta),
+                    y: Math.cos(phi),
+                    z: Math.sin(phi) * Math.sin(theta),
+                    scale: 1.0,
+                };
+            },
+        };
+    }
+
+    /**
+     * Linear interpolation between two points
+     */
+    lerpPoint(pointA, pointB, t) {
+        return {
+            x: pointA.x + (pointB.x - pointA.x) * t,
+            y: pointA.y + (pointB.y - pointA.y) * t,
+            z: pointA.z + (pointB.z - pointA.z) * t,
+            scale: pointA.scale + (pointB.scale - pointA.scale) * t,
+        };
+    }
+
+    /**
+     * Start a morph animation
+     */
+    startMorph(targetShape, duration = null) {
+        this.state.morphSourceShape = this.config.shape;
+        this.config.morphTargetShape = targetShape;
+        this.state.morphStartTime = performance.now();
+        this.state.isMorphing = true;
+        this.state.morphProgress = 0;
+        this.state.morphDirection = 1;
+        if (duration !== null) {
+            this.config.morphDuration = duration;
+        }
+    }
+
+    /**
+     * Update morph progress based on elapsed time
+     */
+    updateMorph(currentTime) {
+        if (!this.state.isMorphing || !this.config.morphAutoPlay) return;
+
+        const elapsed = currentTime - this.state.morphStartTime;
+        let progress = elapsed / this.config.morphDuration;
+
+        if (this.config.morphLoop) {
+            // Ping-pong looping
+            const cycle = Math.floor(progress);
+            progress = progress - cycle;
+            if (cycle % 2 === 1) {
+                progress = 1 - progress;
+            }
+        } else {
+            progress = Math.min(1, progress);
+            if (progress >= 1) {
+                this.state.isMorphing = false;
+            }
+        }
+
+        this.state.morphProgress = progress;
+    }
+
+    /**
+     * Generate morphed shape lines with interpolation between source and target shapes
+     */
+    generateMorphedLines(radius, numLines, segments, time) {
+        const lines = [];
+        const baseGenerators = this.getBaseShapeGenerators();
+        const sourceGen = baseGenerators[this.state.morphSourceShape] || baseGenerators.sphere;
+        const targetGen = baseGenerators[this.config.morphTargetShape] || baseGenerators.cube;
+        const morphProgress = this.config.morphEnabled ?
+            (this.state.isMorphing ? this.state.morphProgress : this.config.morphProgress) : 0;
+
+        for (let i = 0; i < numLines; i++) {
+            const points = [];
+
+            for (let j = 0; j <= segments; j++) {
+                // Get base points from both shapes
+                const baseA = sourceGen(i, j, numLines, segments);
+                const baseB = targetGen(i, j, numLines, segments);
+
+                // Interpolate between shapes
+                const morphed = this.lerpPoint(baseA, baseB, morphProgress);
+
+                // Calculate effective radius with interpolated scale
+                const effectiveRadius = radius * morphed.scale;
+
+                // Apply displacement AFTER morphing
+                const displaced = this.applyDisplacement(
+                    morphed.x, morphed.y, morphed.z,
+                    effectiveRadius, time
+                );
+
+                points.push(displaced);
+            }
+
+            lines.push({ points, index: i });
+        }
+
+        return lines;
     }
 
     calculateAutoRotation() {
@@ -924,8 +1640,8 @@ export class TopographicCanvas {
     }
 
     renderShape() {
-        const { width, height, time } = this.state;
-        const radius = this.config.sphereSize;
+        const { width, height, time, calculatedRadius } = this.state;
+        const radius = calculatedRadius;
         const numLines = this.config.lineDensity;
         const segments = this.config.lineSegments;
 
@@ -947,7 +1663,13 @@ export class TopographicCanvas {
 
         const generators = this.getShapeGenerators();
         const generator = generators[this.config.shape] || generators.sphere;
-        const rawLines = generator(radius, numLines, segments, time);
+
+        // Use morphed lines when morphing is enabled and has progress
+        const shouldMorph = this.config.morphEnabled &&
+            (this.state.morphProgress > 0 || this.config.morphProgress > 0);
+        const rawLines = shouldMorph
+            ? this.generateMorphedLines(radius, numLines, segments, time)
+            : generator(radius, numLines, segments, time);
 
         this.updateRotationCache();
         this.updateColorCache();
@@ -1008,6 +1730,9 @@ export class TopographicCanvas {
         this.lastTime = currentTime;
 
         this.state.time += deltaTime * this.config.animationSpeed * 0.01;
+
+        // Update morph animation if auto-playing
+        this.updateMorph(currentTime);
 
         const autoRot = this.calculateAutoRotation();
         this.calculateRandomMotion();

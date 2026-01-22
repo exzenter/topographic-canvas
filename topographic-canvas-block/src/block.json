@@ -76,6 +76,34 @@
             "type": "string",
             "default": "sphere"
         },
+        "textChar": {
+            "type": "string",
+            "default": "5"
+        },
+        "morphEnabled": {
+            "type": "boolean",
+            "default": false
+        },
+        "morphTargetShape": {
+            "type": "string",
+            "default": "cube"
+        },
+        "morphProgress": {
+            "type": "number",
+            "default": 0
+        },
+        "morphDuration": {
+            "type": "number",
+            "default": 1500
+        },
+        "morphAutoPlay": {
+            "type": "boolean",
+            "default": false
+        },
+        "morphLoop": {
+            "type": "boolean",
+            "default": false
+        },
         "mode": {
             "type": "string",
             "default": "wavy"
@@ -108,13 +136,13 @@
             "type": "number",
             "default": 280
         },
-        "sphereSizeMode": {
-            "type": "string",
-            "default": "px"
+        "useSphereSizeRem": {
+            "type": "boolean",
+            "default": false
         },
         "sphereSizeRem": {
             "type": "number",
-            "default": 17.5
+            "default": 15
         },
         "noiseScale": {
             "type": "number",

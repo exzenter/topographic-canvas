@@ -17,19 +17,6 @@ function initTopographicCanvasBlocks() {
         }
 
         // Get configuration from data attributes
-        const sphereSizeMode = container.dataset.sphereSizeMode || 'px';
-        const sphereSizeRem = parseFloat(container.dataset.sphereSizeRem) || 17.5;
-        const sphereSizePx = parseInt(container.dataset.sphereSize) || 280;
-
-        // Calculate initial sphere size based on mode
-        const calculateSphereSize = () => {
-            if (sphereSizeMode === 'rem') {
-                const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-                return sphereSizeRem * rootFontSize;
-            }
-            return sphereSizePx;
-        };
-
         const config = {
             shape: container.dataset.shape || 'sphere',
             mode: container.dataset.mode || 'wavy',
@@ -39,7 +26,9 @@ function initTopographicCanvasBlocks() {
             hueEnd: parseFloat(container.dataset.hueEnd) || 280,
             lineDensity: parseInt(container.dataset.lineDensity) || 60,
             lineSegments: parseInt(container.dataset.lineSegments) || 150,
-            sphereSize: calculateSphereSize(),
+            sphereSize: parseInt(container.dataset.sphereSize) || 280,
+            useSphereSizeRem: container.dataset.useSphereSizeRem === 'true',
+            sphereSizeRem: parseFloat(container.dataset.sphereSizeRem) || 15,
             noiseScale: parseFloat(container.dataset.noiseScale) || 2,
             noiseAmplitude: parseInt(container.dataset.noiseAmplitude) || 30,
             animationSpeed: parseInt(container.dataset.animationSpeed) || 50,
@@ -144,14 +133,6 @@ function initTopographicCanvasBlocks() {
 
         // Mark as initialized
         container.dataset.initialized = 'true';
-
-        // Add resize listener to update sphere size in REM mode
-        if (sphereSizeMode === 'rem') {
-            window.addEventListener('resize', () => {
-                const newSphereSize = calculateSphereSize();
-                canvasInstance.updateConfig({ sphereSize: newSphereSize });
-            });
-        }
 
         // Setup sticky center positioning by measuring height and calculating top value
         if (block.classList.contains('sticky-position-center')) {
@@ -271,6 +252,30 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
     };
 
     const interpolateValue = (key, startVal, endVal, progress) => {
+        // Special handling for shape - return morph parameters
+        if (key === 'shape' && startVal !== endVal) {
+            return {
+                __isShapeMorph: true,
+                morphEnabled: true,
+                morphSourceShape: startVal,
+                morphTargetShape: endVal,
+                morphProgress: progress,
+                shape: startVal // Keep source shape as the base
+            };
+        }
+
+        // Special handling for textChar - return morph parameters
+        if (key === 'textChar' && startVal !== endVal) {
+            return {
+                __isTextMorph: true,
+                morphEnabled: true,
+                morphSourceChar: startVal,
+                morphTargetChar: endVal,
+                morphProgress: progress,
+                textChar: startVal // Keep source char as the base
+            };
+        }
+
         if (typeof startVal === 'number' && typeof endVal === 'number') {
             return lerp(startVal, endVal, progress);
         }
@@ -297,6 +302,10 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
         // Start with base configuration
         let state = { ...baseConfig };
 
+        // Track whether we're currently in a shape or text morph
+        let inShapeMorph = false;
+        let inTextMorph = false;
+
         // --- STEP 1: Apply simple keyframes (cumulative, in order) ---
         const simpleKFs = computedKeyframes
             .filter(k => !k.isAdvanced && k.computedStart !== -1)
@@ -322,7 +331,26 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
             Object.keys(nextSimple.settings).forEach(key => {
                 const startVal = state[key];
                 const endVal = nextSimple.settings[key];
-                state[key] = interpolateValue(key, startVal, endVal, clampedProgress);
+                const result = interpolateValue(key, startVal, endVal, clampedProgress);
+
+                // Handle shape morph return object
+                if (result && result.__isShapeMorph) {
+                    inShapeMorph = true;
+                    state.morphEnabled = result.morphEnabled;
+                    state.morphSourceShape = result.morphSourceShape;
+                    state.morphTargetShape = result.morphTargetShape;
+                    state.morphProgress = result.morphProgress;
+                    state.shape = result.shape;
+                } else if (result && result.__isTextMorph) {
+                    inTextMorph = true;
+                    state.morphEnabled = result.morphEnabled;
+                    state.morphSourceChar = result.morphSourceChar;
+                    state.morphTargetChar = result.morphTargetChar;
+                    state.morphProgress = result.morphProgress;
+                    state.textChar = result.textChar;
+                } else {
+                    state[key] = result;
+                }
             });
         }
 
@@ -348,7 +376,26 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
                 allKeys.forEach(key => {
                     const sVal = startSet[key] !== undefined ? startSet[key] : state[key];
                     const eVal = endSet[key] !== undefined ? endSet[key] : state[key];
-                    state[key] = interpolateValue(key, sVal, eVal, progress);
+                    const result = interpolateValue(key, sVal, eVal, progress);
+
+                    // Handle shape morph return object
+                    if (result && result.__isShapeMorph) {
+                        inShapeMorph = true;
+                        state.morphEnabled = result.morphEnabled;
+                        state.morphSourceShape = result.morphSourceShape;
+                        state.morphTargetShape = result.morphTargetShape;
+                        state.morphProgress = result.morphProgress;
+                        state.shape = result.shape;
+                    } else if (result && result.__isTextMorph) {
+                        inTextMorph = true;
+                        state.morphEnabled = result.morphEnabled;
+                        state.morphSourceChar = result.morphSourceChar;
+                        state.morphTargetChar = result.morphTargetChar;
+                        state.morphProgress = result.morphProgress;
+                        state.textChar = result.textChar;
+                    } else {
+                        state[key] = result;
+                    }
                 });
             } else if (scrollPos > rangeEnd) {
                 // PAST: apply end settings (target values)
@@ -360,6 +407,12 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
             }
             // BEFORE range: do nothing, previous state stays
         });
+
+        // If not in a shape or text morph, disable morphing
+        if (!inShapeMorph && !inTextMorph) {
+            state.morphEnabled = false;
+            state.morphProgress = 0;
+        }
 
         return state;
     };

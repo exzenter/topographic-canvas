@@ -71,12 +71,18 @@ export default function Edit({ attributes, setAttributes, clientId }) {
     // Shape options
     const shapeOptions = [
         { label: __('Sphere', 'topographic-canvas-block'), value: 'sphere' },
+        { label: __('Ellipsoid', 'topographic-canvas-block'), value: 'ellipsoid' },
+        { label: __('Capsule', 'topographic-canvas-block'), value: 'capsule' },
         { label: __('Cube', 'topographic-canvas-block'), value: 'cube' },
         { label: __('Pyramid', 'topographic-canvas-block'), value: 'pyramid' },
         { label: __('Plane', 'topographic-canvas-block'), value: 'plane' },
         { label: __('Torus', 'topographic-canvas-block'), value: 'torus' },
         { label: __('Cylinder', 'topographic-canvas-block'), value: 'cylinder' },
         { label: __('Cone', 'topographic-canvas-block'), value: 'cone' },
+        { label: __('Möbius Strip', 'topographic-canvas-block'), value: 'mobius' },
+        { label: __('Heart', 'topographic-canvas-block'), value: 'heart' },
+        { label: __('Klein Bottle', 'topographic-canvas-block'), value: 'klein' },
+        { label: __('Number (0-9)', 'topographic-canvas-block'), value: 'number' },
     ];
 
     // Mode options
@@ -178,12 +184,80 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                         options={shapeOptions}
                         onChange={(value) => setAttributes({ shape: value })}
                     />
+                    {attributes.shape === 'number' && (
+                        <TextControl
+                            label={__('Number / Character', 'topographic-canvas-block')}
+                            value={attributes.textChar}
+                            onChange={(value) => setAttributes({ textChar: value.slice(0, 1) })} // Limit to 1 char
+                            help={__('Enter a single digit (0-9) or character.', 'topographic-canvas-block')}
+                        />
+                    )}
                     <SelectControl
                         label={__('Mode', 'topographic-canvas-block')}
                         value={attributes.mode}
                         options={modeOptions}
                         onChange={(value) => setAttributes({ mode: value })}
                     />
+                </PanelBody>
+
+                { /* Shape Morph Panel */}
+                <PanelBody title={__('Shape Morph', 'topographic-canvas-block')} initialOpen={false}>
+                    <ToggleControl
+                        label={__('Enable Shape Morphing', 'topographic-canvas-block')}
+                        help={attributes.morphEnabled
+                            ? __('Shape will morph to target', 'topographic-canvas-block')
+                            : __('Morphing is disabled', 'topographic-canvas-block')
+                        }
+                        checked={attributes.morphEnabled}
+                        onChange={(value) => setAttributes({ morphEnabled: value })}
+                    />
+                    {attributes.morphEnabled && (
+                        <>
+                            <SelectControl
+                                label={__('Target Shape', 'topographic-canvas-block')}
+                                value={attributes.morphTargetShape}
+                                options={shapeOptions.filter(opt => opt.value !== 'number')}
+                                onChange={(value) => setAttributes({ morphTargetShape: value })}
+                            />
+                            <RangeControl
+                                label={__('Morph Progress', 'topographic-canvas-block')}
+                                help={__('0% = Current Shape, 100% = Target Shape', 'topographic-canvas-block')}
+                                value={Math.round(attributes.morphProgress * 100)}
+                                onChange={(value) => setAttributes({ morphProgress: value / 100 })}
+                                min={0}
+                                max={100}
+                            />
+                            <Divider />
+                            <RangeControl
+                                label={__('Morph Duration (ms)', 'topographic-canvas-block')}
+                                value={attributes.morphDuration}
+                                onChange={(value) => setAttributes({ morphDuration: value })}
+                                min={100}
+                                max={5000}
+                                step={100}
+                            />
+                            <ToggleControl
+                                label={__('Auto-Play Animation', 'topographic-canvas-block')}
+                                help={attributes.morphAutoPlay
+                                    ? __('Morph animates automatically', 'topographic-canvas-block')
+                                    : __('Use progress slider to control', 'topographic-canvas-block')
+                                }
+                                checked={attributes.morphAutoPlay}
+                                onChange={(value) => setAttributes({ morphAutoPlay: value })}
+                            />
+                            {attributes.morphAutoPlay && (
+                                <ToggleControl
+                                    label={__('Loop Animation', 'topographic-canvas-block')}
+                                    help={attributes.morphLoop
+                                        ? __('Morph loops back and forth', 'topographic-canvas-block')
+                                        : __('Animation plays once', 'topographic-canvas-block')
+                                    }
+                                    checked={attributes.morphLoop}
+                                    onChange={(value) => setAttributes({ morphLoop: value })}
+                                />
+                            )}
+                        </>
+                    )}
                 </PanelBody>
 
                 { /* Sticky Settings Panel */}
@@ -316,33 +390,34 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                         min={60}
                         max={300}
                     />
-                    <ToggleControl
-                        label={__('Use REM Size', 'topographic-canvas-block')}
-                        help={attributes.sphereSizeMode === 'rem'
-                            ? __('Sphere size scales with viewport', 'topographic-canvas-block')
-                            : __('Fixed pixel size', 'topographic-canvas-block')
-                        }
-                        checked={attributes.sphereSizeMode === 'rem'}
-                        onChange={(value) => setAttributes({ sphereSizeMode: value ? 'rem' : 'px' })}
-                    />
-                    {attributes.sphereSizeMode === 'rem' ? (
-                        <RangeControl
-                            label={__('Sphere Size (rem)', 'topographic-canvas-block')}
-                            value={attributes.sphereSizeRem}
-                            onChange={(value) => setAttributes({ sphereSizeRem: value })}
-                            min={5}
-                            max={50}
-                            step={0.5}
+                    <div style={{ marginBottom: '16px', border: '1px solid #e0e0e0', padding: '10px', borderRadius: '4px' }}>
+                        <ToggleControl
+                            label={__('Use REM Size', 'topographic-canvas-block')}
+                            help={attributes.useSphereSizeRem
+                                ? __('Sphere size determined by root font size', 'topographic-canvas-block')
+                                : __('Sphere size using fixed pixels', 'topographic-canvas-block')
+                            }
+                            checked={attributes.useSphereSizeRem}
+                            onChange={(value) => setAttributes({ useSphereSizeRem: value })}
                         />
-                    ) : (
-                        <RangeControl
-                            label={__('Sphere Size (px)', 'topographic-canvas-block')}
-                            value={attributes.sphereSize}
-                            onChange={(value) => setAttributes({ sphereSize: value })}
-                            min={100}
-                            max={500}
-                        />
-                    )}
+                        {attributes.useSphereSizeRem ? (
+                            <TextControl
+                                label={__('Sphere Size (rem)', 'topographic-canvas-block')}
+                                value={attributes.sphereSizeRem}
+                                onChange={(value) => setAttributes({ sphereSizeRem: parseFloat(value) })}
+                                type="number"
+                                step="0.5"
+                            />
+                        ) : (
+                            <RangeControl
+                                label={__('Sphere Size (px)', 'topographic-canvas-block')}
+                                value={attributes.sphereSize}
+                                onChange={(value) => setAttributes({ sphereSize: value })}
+                                min={100}
+                                max={500}
+                            />
+                        )}
+                    </div>
                     <RangeControl
                         label={__('Line Width', 'topographic-canvas-block')}
                         value={attributes.lineWidth}

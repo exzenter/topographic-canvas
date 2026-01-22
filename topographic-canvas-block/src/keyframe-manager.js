@@ -54,6 +54,24 @@ export const VIEW_PRESETS = {
 const SETTINGS_GROUPS = {
     'View & Rotation': [
         {
+            label: 'Shape', key: 'shape', type: 'select', options: [
+                { label: 'Sphere', value: 'sphere' },
+                { label: 'Ellipsoid', value: 'ellipsoid' },
+                { label: 'Capsule', value: 'capsule' },
+                { label: 'Cube', value: 'cube' },
+                { label: 'Pyramid', value: 'pyramid' },
+                { label: 'Plane', value: 'plane' },
+                { label: 'Torus', value: 'torus' },
+                { label: 'Cylinder', value: 'cylinder' },
+                { label: 'Cone', value: 'cone' },
+                { label: 'Möbius Strip', value: 'mobius' },
+                { label: 'Heart', value: 'heart' },
+                { label: 'Klein Bottle', value: 'klein' },
+                { label: 'Number / Text', value: 'number' },
+            ]
+        },
+        { label: 'Text Character', key: 'textChar', type: 'text', help: 'Single character (0-9, a-z) for number shape' },
+        {
             label: 'View Preset', key: 'viewPreset', type: 'select', options: [
                 { label: 'None', value: '' },
                 { label: 'Top', value: 'top' },
@@ -395,9 +413,7 @@ export default function KeyframeManager({ keyframes, setAttributes, isOpen, onCl
                                         position: 'relative',
                                         zIndex: draggedIndex === index ? 10 : 1
                                     }}
-                                    draggable="true"
                                     onDragOver={(e) => handleDragOver(e, index)}
-                                    onDragEnd={handleDragEnd}
                                 >
                                     <CardHeader
                                         style={{
@@ -420,6 +436,7 @@ export default function KeyframeManager({ keyframes, setAttributes, isOpen, onCl
                                                 e.stopPropagation(); // Stop click from firing on parent header (if expanding)
                                                 handleDragStart(index);
                                             }}
+                                            onDragEnd={handleDragEnd}
                                             onClick={(e) => e.stopPropagation()} // Prevent expansion when clicking handle
                                         >
                                             {icons.dragHandle}

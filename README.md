@@ -41,10 +41,25 @@ npx serve
 
 ## Technologies
 
-- **HTML5 Canvas**: For high-performance 2D/3D rendering.
-- **Vanilla JavaScript**: No heavy frameworks, just pure JS logic.
-- **Simplex Noise**: Implementation for smooth, organic procedural generation.
-- **CSS3**: Modern styling for the glassmorphism settings panel.
+### 1. Core Rendering: **HTML5 Canvas (2D Context)**
+We are **not** using a 3D library like Three.js or WebGL. Instead, we are using the standard 2D Canvas API (`ctx.beginPath()`, `ctx.lineTo()`, `ctx.stroke()`) to draw the lines.
+
+### 2. 3D Engine: **Custom "Pseudo-3D" Projection**
+Since we aren't using a 3D library, the 3D logic is manually implemented in `TopographicCanvas.js`:
+*   **Point Generation**: We calculate raw X, Y, Z coordinates for geometric shapes (spheres, cubes, toruses).
+*   **Projection**: We basically flatten these 3D coordinates onto the 2D screen using simple math: `screenX = x * scale` and `screenY = y * scale`.
+*   **Rotation**: We apply 3D rotation matrices manually to the X, Y, Z coordinates before projecting them.
+
+### 3. Animation Logic
+*   **Loop**: Driven by `requestAnimationFrame` for smooth 60fps performance.
+*   **Procedural Noise**: We use a **Simplex Noise** algorithm (imported from `./simplex-noise`) to generate the organic, wavy "terrain" effect by modifying the radius/position of points over time.
+*   **Interpolation**: We use Linear Interpolation (LERP) functions to calculate the intermediate states for:
+    *   **Morphing**: Blending point positions between two shapes.
+    *   **Colors**: Blending start/end hues.
+
+### 4. Integration
+*   **Frontend**: Pure Vanilla JS (ES6 class structure) for maximum performance and zero dependencies.
+*   **Editor**: React & `@wordpress/components` for the UI controls in the block editor.
 
 ## Credits
 
