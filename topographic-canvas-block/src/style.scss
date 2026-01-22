@@ -1,0 +1,87 @@
+/**
+ * Frontend styles for Topographic Canvas Block
+ */
+.wp-block-topographic-canvas-block {
+    position: relative;
+    overflow: hidden;
+
+    .topographic-canvas-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+
+            &:active {
+                cursor: grabbing;
+            }
+        }
+    }
+
+    // Full-width alignment support
+    &.alignfull {
+        width: 100vw;
+        max-width: 100vw;
+        margin-left: calc(50% - 50vw);
+        margin-right: calc(50% - 50vw);
+    }
+
+    &.alignwide {
+        max-width: var(--wp--style--global--wide-size, 1200px);
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    // Sticky positioning
+    &.has-sticky-position {
+        z-index: 10;
+        align-self: flex-start; // Needed for sticky to work in flexbox columns
+        overflow: visible; // CRITICAL: sticky requires visible overflow on all parents
+    }
+
+    // Sticky is-sticky class (WordPress core uses both)
+    &.is-sticky {
+        position: sticky !important;
+        z-index: 10;
+    }
+
+    // Center sticky position - top value is calculated by JavaScript at page load
+    // using: top: calc(50vh - [half element height] + offset)
+    // No transform needed - pure CSS sticky centering
+}
+
+// CRITICAL: Fix parent container height for sticky to work
+// Sticky elements need their parent to have extra height to scroll within
+// Target common WordPress column/layout wrapper patterns
+.kt-inside-inner-col:has(.wp-block-topographic-canvas-block.has-sticky-position),
+.kt-inside-inner-col:has(.wp-block-topographic-canvas-block.is-sticky) {
+    height: 100%; // Stretch to fill parent column
+}
+
+.wp-block-kadence-column:has(.wp-block-topographic-canvas-block.has-sticky-position),
+.wp-block-kadence-column:has(.wp-block-topographic-canvas-block.is-sticky) {
+    align-self: stretch; // Ensure column stretches to row height
+}
+
+// Generic CSS for other block editors/layouts
+.wp-block-column:has(.wp-block-topographic-canvas-block.has-sticky-position),
+.wp-block-column:has(.wp-block-topographic-canvas-block.is-sticky) {
+    align-self: stretch;
+
+    >* {
+        height: 100%;
+    }
+}
+
+// Disable sticky on mobile (768px breakpoint)
+@media (max-width: 768px) {
+    .wp-block-topographic-canvas-block.disable-sticky-mobile {
+        position: relative !important;
+        top: auto !important;
+        overflow: hidden; // Restore overflow when sticky is disabled
+    }
+}

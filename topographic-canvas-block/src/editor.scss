@@ -1,0 +1,34 @@
+/**
+ * Editor styles for Topographic Canvas Block
+ */
+.wp-block-topographic-canvas-block {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+
+    .topographic-canvas-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+
+            &:active {
+                cursor: grabbing;
+            }
+        }
+    }
+}
+
+// Editor-specific placeholder when no canvas
+.editor-styles-wrapper .wp-block-topographic-canvas-block {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #0a0a0a;
+}

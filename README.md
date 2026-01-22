@@ -49,3 +49,530 @@ npx serve
 ## Credits
 
 Created by [Exzenter](https://github.com/exzenter).
+
+
+Topographic Canvas Configuration API
+Complete reference for all configurable options in the topographic canvas animation. All settings are exposed via the global config object.
+
+Access Pattern
+// To modify settings from external JavaScript:
+const canvasConfig = window.config; // Access the config object
+canvasConfig.noiseAmplitude = 50;   // Modify any property
+Shape & Visual Mode
+shape (String)
+Accepted Values: 'sphere', 'cube', 'pyramid', 'plane', 'torus', 'cylinder', 'cone'
+Default: 'sphere'
+
+mode (String)
+Accepted Values: 'wavy', 'bands', 'cellular', 'turbulent', 'spiral', 'ripple'
+Default: 'wavy'
+
+Color Settings
+colorMode (String)
+Accepted Values: 'mono', 'color'
+Default: 'mono'
+
+lineColor (String - Hex Color)
+Format: Hex color code (e.g., '#ffffff')
+Default: '#ffffff'
+Note: Only applies when colorMode is 'mono'
+
+hueStart (Number)
+Min: 0
+Max: 360
+Step: 1
+Default: 180
+Note: Only applies when colorMode is 'color'
+
+hueEnd (Number)
+Min: 0
+Max: 360
+Step: 1
+Default: 280
+Note: Only applies when colorMode is 'color'
+
+bgColor (String - Hex Color)
+Format: Hex color code
+Default: '#0a0a0a'
+
+Performance Settings
+lineDensity (Number - Integer)
+Min: 20
+Max: 120
+Step: 1
+Default: 60
+Description: Number of horizontal lines on the shape
+
+lineSegments (Number - Integer)
+Min: 60
+Max: 300
+Step: 1
+Default: 150
+Description: Points per line (detail level)
+
+Shape Geometry
+sphereSize (Number - Integer)
+Min: 100
+Max: 500
+Step: 1
+Default: 280
+
+Noise & Distortion
+noiseScale (Number)
+Min: 0.5
+Max: 5
+Step: 0.1
+Default: 2
+Decimals: 1
+
+noiseAmplitude (Number - Integer)
+Min: 0
+Max: 100
+Step: 1
+Default: 30
+
+animationSpeed (Number - Integer)
+Min: 0
+Max: 200
+Step: 1
+Default: 50
+
+Line Appearance
+lineWidth (Number)
+Min: 0.2
+Max: 3
+Step: 0.1
+Default: 0.8
+Decimals: 1
+
+lineOpacity (Number)
+Min: 0.1
+Max: 1
+Step: 0.05
+Default: 0.7
+Decimals: 2
+
+depthFade (Boolean)
+Default: true
+
+glowEffect (Boolean)
+Default: false
+
+Mode-Specific Settings
+Wavy Mode
+wavyOctave2Strength (Number)
+Min: 0
+Max: 1
+Step: 0.05
+Default: 0.5
+Decimals: 2
+
+wavyOctave3Strength (Number)
+Min: 0
+Max: 1
+Step: 0.05
+Default: 0.25
+Decimals: 2
+
+wavyOctave2Freq (Number)
+Min: 1
+Max: 5
+Step: 0.1
+Default: 2
+Decimals: 1
+
+wavyOctave3Freq (Number)
+Min: 1
+Max: 8
+Step: 0.1
+Default: 4
+Decimals: 1
+
+wavyTime2 (Number)
+Min: 0.5
+Max: 3
+Step: 0.1
+Default: 1.5
+Decimals: 1
+
+wavyTime3 (Number)
+Min: 0.5
+Max: 4
+Step: 0.1
+Default: 2
+Decimals: 1
+
+Bands Mode
+bandsDensity (Number - Integer)
+Min: 2
+Max: 20
+Step: 1
+Default: 8
+
+bandsNoiseInfluence (Number)
+Min: 0
+Max: 1
+Step: 0.05
+Default: 0.7
+Decimals: 2
+
+bandsTimeScale (Number)
+Min: 0.5
+Max: 5
+Step: 0.1
+Default: 2
+Decimals: 1
+
+bandsAngleScale (Number)
+Min: 0.1
+Max: 2
+Step: 0.1
+Default: 0.5
+Decimals: 1
+
+bandsYScale (Number)
+Min: 0.5
+Max: 5
+Step: 0.1
+Default: 2
+Decimals: 1
+
+bandsStrength (Number)
+Min: 0
+Max: 1
+Step: 0.05
+Default: 0.3
+Decimals: 2
+
+Cellular Mode
+cellularFreq1 (Number)
+Min: 1
+Max: 8
+Step: 0.5
+Default: 3
+Decimals: 1
+
+cellularFreq2 (Number)
+Min: 2
+Max: 12
+Step: 0.5
+Default: 6
+Decimals: 1
+
+cellularTime2 (Number)
+Min: 0.1
+Max: 2
+Step: 0.1
+Default: 0.5
+Decimals: 1
+
+cellularAmpBoost (Number)
+Min: 0.5
+Max: 3
+Step: 0.1
+Default: 1.5
+Decimals: 1
+
+cellularSharpness (Number)
+Min: 1
+Max: 4
+Step: 0.1
+Default: 2
+Decimals: 1
+
+Turbulent Mode
+turbulentOctaves (Number - Integer)
+Min: 1
+Max: 8
+Step: 1
+Default: 5
+
+turbulentLacunarity (Number)
+Min: 1.5
+Max: 3
+Step: 0.1
+Default: 2
+Decimals: 1
+
+turbulentPersistence (Number)
+Min: 0.2
+Max: 0.8
+Step: 0.05
+Default: 0.5
+Decimals: 2
+
+turbulentTimeMult (Number)
+Min: 0.1
+Max: 1
+Step: 0.05
+Default: 0.3
+Decimals: 2
+
+turbulentTimeOffset (Number)
+Min: 0
+Max: 2
+Step: 0.1
+Default: 1
+Decimals: 1
+
+Spiral Mode
+spiralArms (Number - Integer)
+Min: 1
+Max: 8
+Step: 1
+Default: 3
+
+spiralTwist (Number)
+Min: 1
+Max: 15
+Step: 0.5
+Default: 5
+Decimals: 1
+
+spiralTimeScale (Number)
+Min: 0.5
+Max: 5
+Step: 0.1
+Default: 2
+Decimals: 1
+
+spiralNoiseBlend (Number)
+Min: 0
+Max: 1
+Step: 0.05
+Default: 0.5
+Decimals: 2
+
+spiralStrength (Number)
+Min: 0.1
+Max: 1
+Step: 0.05
+Default: 0.5
+Decimals: 2
+
+Ripple Mode
+rippleFrequency (Number - Integer)
+Min: 2
+Max: 20
+Step: 1
+Default: 10
+
+rippleSpeed (Number)
+Min: 0.5
+Max: 8
+Step: 0.5
+Default: 3
+Decimals: 1
+
+rippleStrength (Number)
+Min: 0.1
+Max: 1
+Step: 0.05
+Default: 0.5
+Decimals: 2
+
+rippleNoiseBlend (Number)
+Min: 0
+Max: 1
+Step: 0.05
+Default: 0.5
+Decimals: 2
+
+rippleNoiseTime (Number)
+Min: 0.1
+Max: 2
+Step: 0.1
+Default: 0.5
+Decimals: 1
+
+Movement & Interaction Settings
+Auto Rotation
+autoRotate (Boolean)
+Default: true
+
+rotationSpeed (Number - Integer)
+Min: 0
+Max: 100
+Step: 1
+Default: 20
+
+rotationDirX (Number - Integer)
+Min: -180
+Max: 180
+Step: 1
+Default: 0
+Description: X-Axis rotation direction in degrees
+
+rotationDirY (Number - Integer)
+Min: -180
+Max: 180
+Step: 1
+Default: 90
+Description: Y-Axis rotation direction in degrees
+
+rotationDirZ (Number - Integer)
+Min: -180
+Max: 180
+Step: 1
+Default: 0
+Description: Z-Axis rotation direction in degrees
+
+rotationMode (String)
+Accepted Values: 'constant', 'pendulum', 'random', 'orbital', 'wobble', 'chaos'
+Default: 'constant'
+
+pendulumAmplitude (Number - Integer)
+Min: 10
+Max: 180
+Step: 1
+Default: 45
+Description: Degrees of swing for pendulum mode
+
+Mouse Drag
+dragEnabled (Boolean)
+Default: true
+
+dragSensitivity (Number)
+Min: 0.1
+Max: 3
+Step: 0.1
+Default: 1
+Decimals: 1
+
+dragInertia (Boolean)
+Default: true
+Description: Enable momentum/inertia
+
+inertiaDecay (Number)
+Min: 0.9
+Max: 0.99
+Step: 0.01
+Default: 0.95
+Decimals: 2
+
+autoBounceBack (Boolean)
+Default: false
+
+bounceBackSpeed (Number)
+Min: 0.01
+Max: 0.2
+Step: 0.01
+Default: 0.05
+Decimals: 2
+
+clampRotation (Boolean)
+Default: false
+Description: Clamp X rotation
+
+maxXRotation (Number - Integer)
+Min: 15
+Max: 180
+Step: 1
+Default: 90
+Description: Max X rotation in degrees
+
+Hover/Mouseover
+hoverEnabled (Boolean)
+Default: false
+
+hoverMode (String)
+Accepted Values: 'tilt', 'repel', 'follow', 'parallax'
+Default: 'tilt'
+
+hoverStrength (Number)
+Min: 0.1
+Max: 3
+Step: 0.1
+Default: 1
+Decimals: 1
+
+hoverSmoothing (Number)
+Min: 0.01
+Max: 0.3
+Step: 0.01
+Default: 0.08
+Decimals: 2
+
+hoverAffectsNoise (Boolean)
+Default: false
+
+hoverNoiseInfluence (Number - Integer)
+Min: 0
+Max: 50
+Step: 1
+Default: 10
+
+Random Motion
+randomMotion (Boolean)
+Default: false
+
+randomMode (String)
+Accepted Values: 'gentle', 'jitter', 'pulse', 'earthquake', 'breathing'
+Default: 'gentle'
+
+randomIntensity (Number)
+Min: 0.1
+Max: 5
+Step: 0.1
+Default: 1
+Decimals: 1
+
+randomSpeed (Number)
+Min: 0.1
+Max: 5
+Step: 0.1
+Default: 1
+Decimals: 1
+
+Advanced Settings
+easingFunction (String)
+Accepted Values: 'linear', 'easeOut', 'easeInOut', 'elastic', 'bounce'
+Default: 'easeOut'
+
+smoothingFactor (Number)
+Min: 0.01
+Max: 0.3
+Step: 0.01
+Default: 0.05
+Decimals: 2
+
+mouseWheelZoom (Boolean)
+Default: false
+
+zoomSensitivity (Number)
+Min: 0.1
+Max: 3
+Step: 0.1
+Default: 1
+Decimals: 1
+
+Scroll-Driven Animation Example
+// Example: Animate settings based on scroll position
+window.addEventListener('scroll', () => {
+    // Get scroll progress (0 to 1)
+    const scrollProgress = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
+    
+    // Map scroll to noise amplitude (30 to 100)
+    config.noiseAmplitude = 30 + (scrollProgress * 70);
+    
+    // Map scroll to rotation speed (0 to 100)
+    config.rotationSpeed = scrollProgress * 100;
+    
+    // Change mode at specific waypoints
+    if (scrollProgress < 0.25) {
+        config.mode = 'wavy';
+    } else if (scrollProgress < 0.5) {
+        config.mode = 'bands';
+    } else if (scrollProgress < 0.75) {
+        config.mode = 'spiral';
+    } else {
+        config.mode = 'turbulent';
+    }
+});
+Notes
+Decimals: Indicates the number of decimal places for precision
+Step: The increment value for sliders
+All numerical values can be set programmatically beyond their UI min/max ranges, but visual results may vary
+Boolean values accept true or false
+String values (modes, colors) are case-sensitive
+Changes to config properties take effect immediately in the animation loop

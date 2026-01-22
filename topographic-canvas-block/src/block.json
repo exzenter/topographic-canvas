@@ -1,0 +1,392 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "topographic-canvas/block",
+    "version": "1.0.0",
+    "title": "Topographic Canvas",
+    "category": "media",
+    "icon": "admin-site-alt3",
+    "description": "An animated 3D topographic canvas with customizable shapes and effects.",
+    "keywords": [
+        "canvas",
+        "animation",
+        "3d",
+        "sphere",
+        "topographic"
+    ],
+    "supports": {
+        "html": false,
+        "align": [
+            "wide",
+            "full"
+        ],
+        "spacing": {
+            "margin": true,
+            "padding": true
+        }
+    },
+    "textdomain": "topographic-canvas-block",
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./index.css",
+    "style": "file:./style-index.css",
+    "viewScript": "file:./view.js",
+    "render": "file:./render.php",
+    "attributes": {
+        "blockId": {
+            "type": "string",
+            "default": ""
+        },
+        "canvasHeight": {
+            "type": "number",
+            "default": 500
+        },
+        "useAspectRatio": {
+            "type": "boolean",
+            "default": false
+        },
+        "aspectRatio": {
+            "type": "string",
+            "default": "16/9"
+        },
+        "enableSticky": {
+            "type": "boolean",
+            "default": false
+        },
+        "stickyPosition": {
+            "type": "string",
+            "default": "top"
+        },
+        "stickyTopOffset": {
+            "type": "string",
+            "default": "0"
+        },
+        "stickyBottomOffset": {
+            "type": "string",
+            "default": "0"
+        },
+        "stickyCenterOffset": {
+            "type": "string",
+            "default": "0"
+        },
+        "disableStickyOnMobile": {
+            "type": "boolean",
+            "default": false
+        },
+        "shape": {
+            "type": "string",
+            "default": "sphere"
+        },
+        "mode": {
+            "type": "string",
+            "default": "wavy"
+        },
+        "colorMode": {
+            "type": "string",
+            "default": "mono"
+        },
+        "lineColor": {
+            "type": "string",
+            "default": "#ffffff"
+        },
+        "hueStart": {
+            "type": "number",
+            "default": 180
+        },
+        "hueEnd": {
+            "type": "number",
+            "default": 280
+        },
+        "lineDensity": {
+            "type": "number",
+            "default": 60
+        },
+        "lineSegments": {
+            "type": "number",
+            "default": 150
+        },
+        "sphereSize": {
+            "type": "number",
+            "default": 280
+        },
+        "noiseScale": {
+            "type": "number",
+            "default": 2
+        },
+        "noiseAmplitude": {
+            "type": "number",
+            "default": 30
+        },
+        "animationSpeed": {
+            "type": "number",
+            "default": 50
+        },
+        "lineWidth": {
+            "type": "number",
+            "default": 0.8
+        },
+        "lineOpacity": {
+            "type": "number",
+            "default": 0.7
+        },
+        "depthFade": {
+            "type": "boolean",
+            "default": true
+        },
+        "glowEffect": {
+            "type": "boolean",
+            "default": false
+        },
+        "bgColor": {
+            "type": "string",
+            "default": "#0a0a0a"
+        },
+        "wavyOctave2Strength": {
+            "type": "number",
+            "default": 0.5
+        },
+        "wavyOctave3Strength": {
+            "type": "number",
+            "default": 0.25
+        },
+        "wavyOctave2Freq": {
+            "type": "number",
+            "default": 2
+        },
+        "wavyOctave3Freq": {
+            "type": "number",
+            "default": 4
+        },
+        "wavyTime2": {
+            "type": "number",
+            "default": 1.5
+        },
+        "wavyTime3": {
+            "type": "number",
+            "default": 2
+        },
+        "bandsDensity": {
+            "type": "number",
+            "default": 8
+        },
+        "bandsNoiseInfluence": {
+            "type": "number",
+            "default": 0.7
+        },
+        "bandsTimeScale": {
+            "type": "number",
+            "default": 2
+        },
+        "bandsAngleScale": {
+            "type": "number",
+            "default": 0.5
+        },
+        "bandsYScale": {
+            "type": "number",
+            "default": 2
+        },
+        "bandsStrength": {
+            "type": "number",
+            "default": 0.3
+        },
+        "cellularFreq1": {
+            "type": "number",
+            "default": 3
+        },
+        "cellularFreq2": {
+            "type": "number",
+            "default": 6
+        },
+        "cellularTime2": {
+            "type": "number",
+            "default": 0.5
+        },
+        "cellularAmpBoost": {
+            "type": "number",
+            "default": 1.5
+        },
+        "cellularSharpness": {
+            "type": "number",
+            "default": 2
+        },
+        "turbulentOctaves": {
+            "type": "number",
+            "default": 5
+        },
+        "turbulentLacunarity": {
+            "type": "number",
+            "default": 2
+        },
+        "turbulentPersistence": {
+            "type": "number",
+            "default": 0.5
+        },
+        "turbulentTimeMult": {
+            "type": "number",
+            "default": 0.3
+        },
+        "turbulentTimeOffset": {
+            "type": "number",
+            "default": 1
+        },
+        "spiralArms": {
+            "type": "number",
+            "default": 3
+        },
+        "spiralTwist": {
+            "type": "number",
+            "default": 5
+        },
+        "spiralTimeScale": {
+            "type": "number",
+            "default": 2
+        },
+        "spiralNoiseBlend": {
+            "type": "number",
+            "default": 0.5
+        },
+        "spiralStrength": {
+            "type": "number",
+            "default": 0.5
+        },
+        "rippleFrequency": {
+            "type": "number",
+            "default": 10
+        },
+        "rippleSpeed": {
+            "type": "number",
+            "default": 3
+        },
+        "rippleStrength": {
+            "type": "number",
+            "default": 0.5
+        },
+        "rippleNoiseBlend": {
+            "type": "number",
+            "default": 0.5
+        },
+        "rippleNoiseTime": {
+            "type": "number",
+            "default": 0.5
+        },
+        "autoRotate": {
+            "type": "boolean",
+            "default": true
+        },
+        "rotationSpeed": {
+            "type": "number",
+            "default": 20
+        },
+        "rotationDirX": {
+            "type": "number",
+            "default": 0
+        },
+        "rotationDirY": {
+            "type": "number",
+            "default": 90
+        },
+        "rotationDirZ": {
+            "type": "number",
+            "default": 0
+        },
+        "rotationMode": {
+            "type": "string",
+            "default": "constant"
+        },
+        "pendulumAmplitude": {
+            "type": "number",
+            "default": 45
+        },
+        "dragEnabled": {
+            "type": "boolean",
+            "default": true
+        },
+        "dragSensitivity": {
+            "type": "number",
+            "default": 1
+        },
+        "dragInertia": {
+            "type": "boolean",
+            "default": true
+        },
+        "inertiaDecay": {
+            "type": "number",
+            "default": 0.95
+        },
+        "autoBounceBack": {
+            "type": "boolean",
+            "default": false
+        },
+        "bounceBackSpeed": {
+            "type": "number",
+            "default": 0.05
+        },
+        "clampRotation": {
+            "type": "boolean",
+            "default": false
+        },
+        "maxXRotation": {
+            "type": "number",
+            "default": 90
+        },
+        "hoverEnabled": {
+            "type": "boolean",
+            "default": false
+        },
+        "hoverMode": {
+            "type": "string",
+            "default": "tilt"
+        },
+        "hoverStrength": {
+            "type": "number",
+            "default": 1
+        },
+        "hoverSmoothing": {
+            "type": "number",
+            "default": 0.08
+        },
+        "hoverAffectsNoise": {
+            "type": "boolean",
+            "default": false
+        },
+        "hoverNoiseInfluence": {
+            "type": "number",
+            "default": 10
+        },
+        "randomMotion": {
+            "type": "boolean",
+            "default": false
+        },
+        "randomMode": {
+            "type": "string",
+            "default": "gentle"
+        },
+        "randomIntensity": {
+            "type": "number",
+            "default": 1
+        },
+        "randomSpeed": {
+            "type": "number",
+            "default": 1
+        },
+        "easingFunction": {
+            "type": "string",
+            "default": "easeOut"
+        },
+        "smoothingFactor": {
+            "type": "number",
+            "default": 0.05
+        },
+        "mouseWheelZoom": {
+            "type": "boolean",
+            "default": false
+        },
+        "zoomSensitivity": {
+            "type": "number",
+            "default": 1
+        },
+        "keyframes": {
+            "type": "array",
+            "default": []
+        }
+    }
+}

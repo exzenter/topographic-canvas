@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+build/
+dist/
+*.log
+*.asset.php
+
+# OS metadata
+.DS_Store
+Thumbs.db

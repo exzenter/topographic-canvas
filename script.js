@@ -148,6 +148,41 @@ const state = {
 };
 
 // ============================================
+// Performance Caches
+// ============================================
+const rotationCache = {
+    cosX: 1, sinX: 0,
+    cosY: 1, sinY: 0,
+    cosZ: 1, sinZ: 0
+};
+
+const colorCache = {
+    lineColorRGB: { r: 255, g: 255, b: 255 },
+    lastLineColor: '#ffffff'
+};
+
+function updateColorCache() {
+    if (config.lineColor !== colorCache.lastLineColor) {
+        const hex = config.lineColor;
+        colorCache.lineColorRGB = {
+            r: parseInt(hex.slice(1, 3), 16),
+            g: parseInt(hex.slice(3, 5), 16),
+            b: parseInt(hex.slice(5, 7), 16)
+        };
+        colorCache.lastLineColor = config.lineColor;
+    }
+}
+
+function updateRotationCache() {
+    rotationCache.cosX = Math.cos(state.rotationX);
+    rotationCache.sinX = Math.sin(state.rotationX);
+    rotationCache.cosY = Math.cos(state.rotationY);
+    rotationCache.sinY = Math.sin(state.rotationY);
+    rotationCache.cosZ = Math.cos(state.rotationZ);
+    rotationCache.sinZ = Math.sin(state.rotationZ);
+}
+
+// ============================================
 // Simplex Noise Implementation
 // ============================================
 class SimplexNoise {
@@ -375,35 +410,52 @@ const displacementModes = {
 };
 
 // ============================================
-// 3D Math Utilities
+// 3D Math Utilities (using cached sin/cos)
 // ============================================
-function rotateX(point, angle) {
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
+function rotateXCached(point) {
+    const { cosX, sinX } = rotationCache;
     return {
         x: point.x,
-        y: point.y * cos - point.z * sin,
-        z: point.y * sin + point.z * cos
+        y: point.y * cosX - point.z * sinX,
+        z: point.y * sinX + point.z * cosX
     };
 }
 
-function rotateY(point, angle) {
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
+function rotateYCached(point) {
+    const { cosY, sinY } = rotationCache;
     return {
-        x: point.x * cos + point.z * sin,
+        x: point.x * cosY + point.z * sinY,
         y: point.y,
-        z: -point.x * sin + point.z * cos
+        z: -point.x * sinY + point.z * cosY
     };
 }
 
-function rotateZ(point, angle) {
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
+function rotateZCached(point) {
+    const { cosZ, sinZ } = rotationCache;
     return {
-        x: point.x * cos - point.y * sin,
-        y: point.x * sin + point.y * cos,
+        x: point.x * cosZ - point.y * sinZ,
+        y: point.x * sinZ + point.y * cosZ,
         z: point.z
+    };
+}
+
+// Combined rotation using cached values (most efficient)
+function rotateAllCached(point) {
+    const { cosX, sinX, cosY, sinY, cosZ, sinZ } = rotationCache;
+
+    // Rotate X
+    const y1 = point.y * cosX - point.z * sinX;
+    const z1 = point.y * sinX + point.z * cosX;
+
+    // Rotate Y
+    const x2 = point.x * cosY + z1 * sinY;
+    const z2 = -point.x * sinY + z1 * cosY;
+
+    // Rotate Z
+    return {
+        x: x2 * cosZ - y1 * sinZ,
+        y: x2 * sinZ + y1 * cosZ,
+        z: z2
     };
 }
 
@@ -802,10 +854,8 @@ function getColor(depth, index, total) {
     }
 
     if (config.colorMode === 'mono') {
-        const hex = config.lineColor;
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
+        // Use cached RGB values instead of parsing hex every call
+        const { r, g, b } = colorCache.lineColorRGB;
         return `rgba(${r}, ${g}, ${b}, ${alpha * depthAlpha})`;
     } else {
         const hue = config.hueStart + (index / total) * (config.hueEnd - config.hueStart);
@@ -839,12 +889,15 @@ function renderShape() {
     const generator = shapeGenerators[config.shape] || shapeGenerators.sphere;
     const rawLines = generator(radius, numLines, segments, time);
 
-    // Transform and project points
+    // Update caches once per frame
+    updateRotationCache();
+    updateColorCache();
+
+    // Transform and project points using cached rotation values
     const lines = rawLines.map(line => {
         const transformedPoints = line.points.map(point => {
-            let p = rotateX(point, state.rotationX);
-            p = rotateY(p, state.rotationY);
-            p = rotateZ(p, state.rotationZ);
+            // Use combined cached rotation (single function call vs 3)
+            const p = rotateAllCached(point);
 
             const projected = projectPoint(p);
             return {

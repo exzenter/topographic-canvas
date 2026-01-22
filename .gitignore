@@ -1,0 +1,25 @@
+# Dependencies (Recursive)
+**/node_modules/
+node_modules/
+
+# Build outputs (Recursive)
+**/build/
+build/
+**/dist/
+dist/
+*.log
+
+# WordPress specific
+**/*.asset.php
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
