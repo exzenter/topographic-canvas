@@ -790,6 +790,20 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                         ))}
                     </ButtonGroup>
                     <Divider />
+                    <SelectControl
+                        label={__('Camera Projection', 'topographic-canvas-block')}
+                        value={attributes.cameraProjection || 'perspective'}
+                        options={[
+                            { label: __('Perspective', 'topographic-canvas-block'), value: 'perspective' },
+                            { label: __('Orthographic', 'topographic-canvas-block'), value: 'orthographic' },
+                        ]}
+                        onChange={(value) => setAttributes({ cameraProjection: value })}
+                        help={attributes.cameraProjection === 'orthographic'
+                            ? __('Parallel projection (CAD-style, no depth)', 'topographic-canvas-block')
+                            : __('Depth-based projection (realistic 3D)', 'topographic-canvas-block')
+                        }
+                    />
+                    <Divider />
                     <ToggleControl
                         label={__('Enable Auto Rotation', 'topographic-canvas-block')}
                         checked={attributes.autoRotate}

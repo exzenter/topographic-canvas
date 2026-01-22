@@ -424,6 +424,10 @@
             "type": "string",
             "default": ""
         },
+        "cameraProjection": {
+            "type": "string",
+            "default": "perspective"
+        },
         "baseRotationX": {
             "type": "number",
             "default": 0

@@ -43,11 +43,19 @@ const TRANSITION_TYPES = [
 
 // View presets with their rotation values (in degrees)
 export const VIEW_PRESETS = {
+    // Orthogonal views
     top: { label: 'Top', baseRotationX: 90, baseRotationY: 0, baseRotationZ: 0 },
+    bottom: { label: 'Bottom', baseRotationX: -90, baseRotationY: 0, baseRotationZ: 0 },
     front: { label: 'Front', baseRotationX: 0, baseRotationY: 0, baseRotationZ: 0 },
-    side: { label: 'Side', baseRotationX: 0, baseRotationY: 90, baseRotationZ: 0 },
+    back: { label: 'Back', baseRotationX: 0, baseRotationY: 180, baseRotationZ: 0 },
+    left: { label: 'Left', baseRotationX: 0, baseRotationY: -90, baseRotationZ: 0 },
+    right: { label: 'Right', baseRotationX: 0, baseRotationY: 90, baseRotationZ: 0 },
+
+    // Isometric views
     iso: { label: 'Iso', baseRotationX: 30, baseRotationY: 45, baseRotationZ: 0 },
     iso2: { label: 'Iso 2', baseRotationX: 30, baseRotationY: -45, baseRotationZ: 0 },
+    iso3: { label: 'Iso 3', baseRotationX: 30, baseRotationY: 135, baseRotationZ: 0 },
+    iso4: { label: 'Iso 4', baseRotationX: 30, baseRotationY: -135, baseRotationZ: 0 },
 };
 
 // Organized settings by category matching block.json structure
@@ -75,10 +83,21 @@ const SETTINGS_GROUPS = {
             label: 'View Preset', key: 'viewPreset', type: 'select', options: [
                 { label: 'None', value: '' },
                 { label: 'Top', value: 'top' },
+                { label: 'Bottom', value: 'bottom' },
                 { label: 'Front', value: 'front' },
-                { label: 'Side', value: 'side' },
+                { label: 'Back', value: 'back' },
+                { label: 'Left', value: 'left' },
+                { label: 'Right', value: 'right' },
                 { label: 'Iso', value: 'iso' },
                 { label: 'Iso 2', value: 'iso2' },
+                { label: 'Iso 3', value: 'iso3' },
+                { label: 'Iso 4', value: 'iso4' },
+            ]
+        },
+        {
+            label: 'Camera Projection', key: 'cameraProjection', type: 'select', options: [
+                { label: 'Perspective', value: 'perspective' },
+                { label: 'Orthographic', value: 'orthographic' },
             ]
         },
         { label: 'Base Rotation X (°)', key: 'baseRotationX', type: 'range', min: -180, max: 180, step: 1 },

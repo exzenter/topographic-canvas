@@ -116,6 +116,10 @@ export class TopographicCanvas {
             mouseWheelZoom: false,
             zoomSensitivity: 1,
 
+            // View & Camera
+            viewPreset: '',
+            cameraProjection: 'perspective',
+
             // Text Mode
             textChar: '5',
 
@@ -1046,7 +1050,12 @@ export class TopographicCanvas {
                     ctx.textBaseline = 'middle';
                     // Use Inter Extra Black if available, fallback to sans-serif
                     ctx.font = '900 400px Inter, "Heebo", sans-serif';
-                    ctx.fillText(char, size / 2, size / 2);
+
+                    // Fix mirrored text by flipping horizontally
+                    ctx.save();
+                    ctx.scale(-1, 1);
+                    ctx.fillText(char, -size / 2, size / 2);
+                    ctx.restore();
 
                     const imageData = ctx.getImageData(0, 0, size, size).data;
 
@@ -1171,14 +1180,25 @@ export class TopographicCanvas {
     }
 
     projectPoint(point) {
-        const fov = 800;
-        const scale = fov / (fov + point.z);
-        return {
-            x: this.state.centerX + point.x * scale * this.state.zoomFactor,
-            y: this.state.centerY + point.y * scale * this.state.zoomFactor,
-            z: point.z,
-            scale,
-        };
+        if (this.config.cameraProjection === 'orthographic') {
+            // Orthographic projection (no depth scaling - parallel projection)
+            return {
+                x: this.state.centerX + point.x * this.state.zoomFactor,
+                y: this.state.centerY + point.y * this.state.zoomFactor,
+                z: point.z,
+                scale: 1,
+            };
+        } else {
+            // Perspective projection (depth-based scaling)
+            const fov = 800;
+            const scale = fov / (fov + point.z);
+            return {
+                x: this.state.centerX + point.x * scale * this.state.zoomFactor,
+                y: this.state.centerY + point.y * scale * this.state.zoomFactor,
+                z: point.z,
+                scale,
+            };
+        }
     }
 
     getColor(depth, index, total) {
