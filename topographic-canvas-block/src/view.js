@@ -217,7 +217,6 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
     const baseConfig = { ...canvasInstance.config };
     let currentValues = { ...baseConfig };
     let lastActiveKeyframe = null;
-    let lastScrollPos = window.scrollY; // Track last scroll position to detect skipped keyframes
 
     // Animation State
     let animationState = {
@@ -377,37 +376,32 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
             scrollDrivenOverrides = { ...scrollDrivenOverrides, ...interpolatedSettings };
         }
 
-        // Logic 2: Passed a keyframe (StartKF) -> Trigger Duration Transition
-        // Fix for fast scrolling: Find all keyframes passed between lastScrollPos and scrollPos
-        if (startKF && (!endKF || endKF.transitionType !== 'linear')) {
-            // Find keyframes that were crossed during this scroll event
-            const scrollDirection = scrollPos > lastScrollPos ? 1 : -1;
-            const minPos = Math.min(lastScrollPos, scrollPos);
-            const maxPos = Math.max(lastScrollPos, scrollPos);
+        // Logic 2: Apply settings from all passed keyframes (handles fast scroll)
+        // Instead of just tracking the most recent keyframe, we build cumulative settings
+        // from all keyframes at or below current scroll position
+        if (!endKF || endKF.transitionType !== 'linear') {
+            // Find ALL keyframes that have been passed (scrollPos >= their trigger)
+            const passedKFs = sortedKFs.filter(kf => scrollPos >= kf.computedStart);
 
-            // Get all standard keyframes that were crossed (between last and current scroll)
-            const crossedKFs = sortedKFs.filter(kf =>
-                kf.computedStart > minPos && kf.computedStart <= maxPos
-            );
+            if (passedKFs.length > 0) {
+                // Build cumulative settings from all passed keyframes (in order)
+                // Later keyframes override earlier ones
+                let cumulativeSettings = {};
+                passedKFs.forEach(kf => {
+                    cumulativeSettings = { ...cumulativeSettings, ...kf.settings };
+                });
 
-            // If scrolling forward, sort ascending; if backward, sort descending
-            if (scrollDirection < 0) {
-                crossedKFs.reverse();
-            }
+                // The most recent passed keyframe (last in sorted list)
+                const currentKF = passedKFs[passedKFs.length - 1];
 
-            // Apply all crossed keyframes in order (for fast scroll)
-            crossedKFs.forEach(kf => {
-                if (kf.id !== (lastActiveKeyframe ? lastActiveKeyframe.id : null)) {
-                    // For intermediate keyframes during fast scroll, apply instantly
-                    triggerTransition(kf.settings, 0);
+                // Only trigger transition if we have new settings to apply
+                if (currentKF.id !== (lastActiveKeyframe ? lastActiveKeyframe.id : null)) {
+                    lastActiveKeyframe = currentKF;
+
+                    // Use duration from the current keyframe, but apply cumulative settings
+                    let duration = currentKF.transitionType === 'duration' ? (currentKF.transitionDuration || 500) : 0;
+                    triggerTransition(cumulativeSettings, duration);
                 }
-            });
-
-            // Now apply the final/current keyframe with its proper duration
-            if (startKF.id !== (lastActiveKeyframe ? lastActiveKeyframe.id : null)) {
-                lastActiveKeyframe = startKF;
-                let duration = startKF.transitionType === 'duration' ? (startKF.transitionDuration || 500) : 0;
-                triggerTransition(startKF.settings, duration);
             }
         }
 
@@ -473,7 +467,6 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
         // Keyframe System Update
         if (scrollKeyframes.length > 0) {
             updateCanvas();
-            lastScrollPos = currentScrollY; // Track for fast scroll detection
         }
     }, { passive: true });
 
