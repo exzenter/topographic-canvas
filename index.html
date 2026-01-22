@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topographic Sphere</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="settings-panel collapsed">
+        <button id="settings-toggle" class="settings-toggle" aria-label="Toggle settings">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                    d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42">
+                </path>
+            </svg>
+        </button>
+
+        <div class="settings-content">
+            <h2>Settings</h2>
+
+            <!-- Shape Selection -->
+            <div class="setting-group">
+                <label>Shape</label>
+                <select id="shape">
+                    <option value="sphere">Sphere</option>
+                    <option value="cube">Cube</option>
+                    <option value="pyramid">Pyramid</option>
+                    <option value="plane">Plane</option>
+                    <option value="torus">Torus</option>
+                    <option value="cylinder">Cylinder</option>
+                    <option value="cone">Cone</option>
+                </select>
+            </div>
+
+            <!-- Mode Selection -->
+            <div class="setting-group">
+                <label>Mode</label>
+                <select id="mode">
+                    <option value="wavy">Wavy Organic</option>
+                    <option value="bands">Horizontal Bands</option>
+                    <option value="cellular">Cellular</option>
+                    <option value="turbulent">Turbulent</option>
+                    <option value="spiral">Spiral</option>
+                    <option value="ripple">Ripple</option>
+                </select>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- MODE-SPECIFIC SETTINGS -->
+            <!-- ============================================ -->
+
+            <!-- WAVY MODE SETTINGS -->
+            <div id="mode-settings-wavy" class="mode-settings-container">
+                <div class="mode-title">Wavy Mode Settings</div>
+
+                <div class="setting-group">
+                    <label
+                        title="Amplitude multiplier for the second noise layer. Higher values add more medium-frequency detail.">Octave
+                        2 Strength</label>
+                    <div class="range-row">
+                        <input type="range" id="wavy-octave2-strength" min="0" max="1" step="0.05" value="0.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="wavy-octave2-strength-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label
+                        title="Amplitude multiplier for the third noise layer. Higher values add more fine detail.">Octave
+                        3 Strength</label>
+                    <div class="range-row">
+                        <input type="range" id="wavy-octave3-strength" min="0" max="1" step="0.05" value="0.25">
+                        <div class="val-wrapper">
+                            <input type="number" id="wavy-octave3-strength-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label
+                        title="Frequency multiplier for the second octave. Higher values create denser patterns.">Octave
+                        2 Frequency</label>
+                    <div class="range-row">
+                        <input type="range" id="wavy-octave2-freq" min="1" max="5" step="0.1" value="2">
+                        <div class="val-wrapper">
+                            <input type="number" id="wavy-octave2-freq-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label
+                        title="Frequency multiplier for the third octave. Higher values create finer noise detail.">Octave
+                        3 Frequency</label>
+                    <div class="range-row">
+                        <input type="range" id="wavy-octave3-freq" min="1" max="8" step="0.1" value="4">
+                        <div class="val-wrapper">
+                            <input type="number" id="wavy-octave3-freq-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Animation speed multiplier for the second noise layer.">Octave 2 Time Scale</label>
+                    <div class="range-row">
+                        <input type="range" id="wavy-time2" min="0.5" max="3" step="0.1" value="1.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="wavy-time2-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Animation speed multiplier for the third noise layer.">Octave 3 Time Scale</label>
+                    <div class="range-row">
+                        <input type="range" id="wavy-time3" min="0.5" max="4" step="0.1" value="2">
+                        <div class="val-wrapper">
+                            <input type="number" id="wavy-time3-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BANDS MODE SETTINGS -->
+            <div id="mode-settings-bands" class="mode-settings-container hidden">
+                <div class="mode-title">Bands Mode Settings</div>
+
+                <div class="setting-group">
+                    <label
+                        title="Number of horizontal band repetitions across the sphere. Higher values create more stripes.">Band
+                        Density</label>
+                    <div class="range-row">
+                        <input type="range" id="bands-density" min="2" max="20" step="1" value="8">
+                        <div class="val-wrapper">
+                            <input type="number" id="bands-density-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label
+                        title="How much organic noise affects the bands. 0 = pure bands, 1 = heavily distorted.">Noise
+                        Influence</label>
+                    <div class="range-row">
+                        <input type="range" id="bands-noise-influence" min="0" max="1" step="0.05" value="0.7">
+                        <div class="val-wrapper">
+                            <input type="number" id="bands-noise-influence-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Animation speed for the bands movement.">Band Time Scale</label>
+                    <div class="range-row">
+                        <input type="range" id="bands-time-scale" min="0.5" max="5" step="0.1" value="2">
+                        <div class="val-wrapper">
+                            <input type="number" id="bands-time-scale-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Noise frequency around the sphere's circumference.">Angular Scale</label>
+                    <div class="range-row">
+                        <input type="range" id="bands-angle-scale" min="0.1" max="2" step="0.1" value="0.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="bands-angle-scale-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Noise frequency along the vertical axis.">Vertical Scale</label>
+                    <div class="range-row">
+                        <input type="range" id="bands-y-scale" min="0.5" max="5" step="0.1" value="2">
+                        <div class="val-wrapper">
+                            <input type="number" id="bands-y-scale-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Amplitude of the pure band sine wave pattern.">Band Strength</label>
+                    <div class="range-row">
+                        <input type="range" id="bands-strength" min="0" max="1" step="0.05" value="0.3">
+                        <div class="val-wrapper">
+                            <input type="number" id="bands-strength-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CELLULAR MODE SETTINGS -->
+            <div id="mode-settings-cellular" class="mode-settings-container hidden">
+                <div class="mode-title">Cellular Mode Settings</div>
+
+                <div class="setting-group">
+                    <label title="Scale multiplier for the first cellular noise layer. Higher = smaller cells.">Layer 1
+                        Frequency</label>
+                    <div class="range-row">
+                        <input type="range" id="cellular-freq1" min="1" max="8" step="0.5" value="3">
+                        <div class="val-wrapper">
+                            <input type="number" id="cellular-freq1-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Scale multiplier for the second cellular noise layer.">Layer 2 Frequency</label>
+                    <div class="range-row">
+                        <input type="range" id="cellular-freq2" min="2" max="12" step="0.5" value="6">
+                        <div class="val-wrapper">
+                            <input type="number" id="cellular-freq2-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Animation speed for the second noise layer relative to the first.">Layer 2 Time
+                        Scale</label>
+                    <div class="range-row">
+                        <input type="range" id="cellular-time2" min="0.1" max="2" step="0.1" value="0.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="cellular-time2-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Overall amplitude boost for the cellular effect.">Amplitude Boost</label>
+                    <div class="range-row">
+                        <input type="range" id="cellular-amp-boost" min="0.5" max="3" step="0.1" value="1.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="cellular-amp-boost-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Exponent applied to the absolute noise values. Higher = sharper cell edges.">Cell
+                        Sharpness</label>
+                    <div class="range-row">
+                        <input type="range" id="cellular-sharpness" min="1" max="4" step="0.1" value="2">
+                        <div class="val-wrapper">
+                            <input type="number" id="cellular-sharpness-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TURBULENT MODE SETTINGS -->
+            <div id="mode-settings-turbulent" class="mode-settings-container hidden">
+                <div class="mode-title">Turbulent Mode Settings</div>
+
+                <div class="setting-group">
+                    <label
+                        title="Number of noise layers combined. More octaves = more detail but slower.">Octaves</label>
+                    <div class="range-row">
+                        <input type="range" id="turbulent-octaves" min="1" max="8" step="1" value="5">
+                        <div class="val-wrapper">
+                            <input type="number" id="turbulent-octaves-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label
+                        title="Frequency multiplier between octaves. Higher = more detail separation.">Lacunarity</label>
+                    <div class="range-row">
+                        <input type="range" id="turbulent-lacunarity" min="1.5" max="3" step="0.1" value="2">
+                        <div class="val-wrapper">
+                            <input type="number" id="turbulent-lacunarity-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label
+                        title="Amplitude decay per octave. Lower = more contribution from higher frequencies.">Persistence</label>
+                    <div class="range-row">
+                        <input type="range" id="turbulent-persistence" min="0.2" max="0.8" step="0.05" value="0.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="turbulent-persistence-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="How much animation speed increases per octave.">Time Multiplier</label>
+                    <div class="range-row">
+                        <input type="range" id="turbulent-time-mult" min="0.1" max="1" step="0.05" value="0.3">
+                        <div class="val-wrapper">
+                            <input type="number" id="turbulent-time-mult-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Base time offset for each octave layer.">Time Offset</label>
+                    <div class="range-row">
+                        <input type="range" id="turbulent-time-offset" min="0" max="2" step="0.1" value="1">
+                        <div class="val-wrapper">
+                            <input type="number" id="turbulent-time-offset-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SPIRAL MODE SETTINGS -->
+            <div id="mode-settings-spiral" class="mode-settings-container hidden">
+                <div class="mode-title">Spiral Mode Settings</div>
+
+                <div class="setting-group">
+                    <label title="Number of spiral arms wrapping around the sphere.">Spiral Arms</label>
+                    <div class="range-row">
+                        <input type="range" id="spiral-arms" min="1" max="8" step="1" value="3">
+                        <div class="val-wrapper">
+                            <input type="number" id="spiral-arms-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="How tightly the spiral wraps. Higher = more rotations.">Spiral Twist</label>
+                    <div class="range-row">
+                        <input type="range" id="spiral-twist" min="1" max="15" step="0.5" value="5">
+                        <div class="val-wrapper">
+                            <input type="number" id="spiral-twist-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Animation speed of the spiral rotation.">Spiral Time Scale</label>
+                    <div class="range-row">
+                        <input type="range" id="spiral-time-scale" min="0.5" max="5" step="0.1" value="2">
+                        <div class="val-wrapper">
+                            <input type="number" id="spiral-time-scale-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label
+                        title="Blend ratio between spiral pattern and organic noise. 0 = all spiral, 1 = all noise.">Noise
+                        Blend</label>
+                    <div class="range-row">
+                        <input type="range" id="spiral-noise-blend" min="0" max="1" step="0.05" value="0.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="spiral-noise-blend-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Amplitude of the spiral wave pattern.">Spiral Strength</label>
+                    <div class="range-row">
+                        <input type="range" id="spiral-strength" min="0.1" max="1" step="0.05" value="0.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="spiral-strength-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIPPLE MODE SETTINGS -->
+            <div id="mode-settings-ripple" class="mode-settings-container hidden">
+                <div class="mode-title">Ripple Mode Settings</div>
+
+                <div class="setting-group">
+                    <label title="Density of concentric rings. Higher = more rings.">Ring Frequency</label>
+                    <div class="range-row">
+                        <input type="range" id="ripple-frequency" min="2" max="20" step="1" value="10">
+                        <div class="val-wrapper">
+                            <input type="number" id="ripple-frequency-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Speed at which rings expand outward.">Ripple Speed</label>
+                    <div class="range-row">
+                        <input type="range" id="ripple-speed" min="0.5" max="8" step="0.5" value="3">
+                        <div class="val-wrapper">
+                            <input type="number" id="ripple-speed-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Amplitude of the ripple wave pattern.">Ripple Strength</label>
+                    <div class="range-row">
+                        <input type="range" id="ripple-strength" min="0.1" max="1" step="0.05" value="0.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="ripple-strength-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Blend ratio of organic noise layered with ripples.">Noise Blend</label>
+                    <div class="range-row">
+                        <input type="range" id="ripple-noise-blend" min="0" max="1" step="0.05" value="0.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="ripple-noise-blend-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label title="Animation speed of the noise layer relative to ripples.">Noise Time Scale</label>
+                    <div class="range-row">
+                        <input type="range" id="ripple-noise-time" min="0.1" max="2" step="0.1" value="0.5">
+                        <div class="val-wrapper">
+                            <input type="number" id="ripple-noise-time-val" class="val-input">
+                            <span class="val-suffix"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Color Toggle -->
+            <div class="setting-group">
+                <label>Color Mode</label>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" data-value="mono" id="color-mono">Mono</button>
+                    <button class="toggle-btn" data-value="color" id="color-color">Color</button>
+                </div>
+            </div>
+
+            <!-- Primary Color (for mono mode) -->
+            <div class="setting-group" id="mono-color-group">
+                <label>Line Color</label>
+                <input type="color" id="line-color" value="#ffffff">
+            </div>
+
+            <!-- Color Settings (for color mode) -->
+            <div class="setting-group hidden" id="color-settings">
+                <label>Hue Range</label>
+                <div class="range-row">
+                    <input type="range" id="hue-start" min="0" max="360" value="180">
+                    <div class="val-wrapper">
+                        <input type="number" id="hue-start-val" class="val-input">
+                        <span class="val-suffix"></span>
+                    </div>
+                </div>
+                <div class="range-row">
+                    <input type="range" id="hue-end" min="0" max="360" value="280">
+                    <div class="val-wrapper">
+                        <input type="number" id="hue-end-val" class="val-input">
+                        <span class="val-suffix"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance -->
+            <div class="setting-group">
+                <label>Line Density</label>
+                <div class="range-row">
+                    <input type="range" id="line-density" min="20" max="120" value="60">
+                    <div class="val-wrapper">
+                        <input type="number" id="line-density-val" class="val-input">
+                        <span class="val-suffix"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Line Segments</label>
+                <div class="range-row">
+                    <input type="range" id="line-segments" min="60" max="300" value="150">
+                    <div class="val-wrapper">
+                        <input type="number" id="line-segments-val" class="val-input">
+                        <span class="val-suffix"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sphere Settings -->
+            <div class="setting-group">
+                <label>Sphere Size</label>
+                <div class="range-row">
+                    <input type="range" id="sphere-size" min="100" max="500" value="280">
+                    <div class="val-wrapper">
+                        <input type="number" id="sphere-size-val" class="val-input">
+                        <span class="val-suffix"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Noise/Distortion -->
+            <div class="setting-group">
+                <label>Noise Scale</label>
+                <div class="range-row">
+                    <input type="range" id="noise-scale" min="0.5" max="5" step="0.1" value="2">
+                    <div class="val-wrapper">
+                        <input type="number" id="noise-scale-val" class="val-input">
+                        <span class="val-suffix"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Noise Amplitude</label>
+                <div class="range-row">
+                    <input type="range" id="noise-amplitude" min="0" max="100" value="30">
+                    <div class="val-wrapper">
+                        <input type="number" id="noise-amplitude-val" class="val-input">
+                        <span class="val-suffix"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Animation Speed</label>
+                <div class="range-row">
+                    <input type="range" id="animation-speed" min="0" max="200" value="50">
+                    <div class="val-wrapper">
+                        <input type="number" id="animation-speed-val" class="val-input">
+                        <span class="val-suffix"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Line Appearance -->
+            <div class="setting-group">
+                <label>Line Width</label>
+                <div class="range-row">
+                    <input type="range" id="line-width" min="0.2" max="3" step="0.1" value="0.8">
+                    <div class="val-wrapper">
+                        <input type="number" id="line-width-val" class="val-input">
+                        <span class="val-suffix"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Line Opacity</label>
+                <div class="range-row">
+                    <input type="range" id="line-opacity" min="0.1" max="1" step="0.05" value="0.7">
+                    <div class="val-wrapper">
+                        <input type="number" id="line-opacity-val" class="val-input">
+                        <span class="val-suffix"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Depth Effect -->
+            <div class="setting-group">
+                <label>
+                    <input type="checkbox" id="depth-fade" checked>
+                    Depth Fade
+                </label>
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    <input type="checkbox" id="glow-effect">
+                    Glow Effect
+                </label>
+            </div>
+
+            <!-- Background -->
+            <div class="setting-group">
+                <label>Background</label>
+                <input type="color" id="bg-color" value="#0a0a0a">
+            </div>
+
+            <!-- ============================================ -->
+            <!-- MOVEMENT SETTINGS ACCORDION -->
+            <!-- ============================================ -->
+            <div class="accordion">
+                <button class="accordion-header" id="movement-accordion-btn">
+                    <span>Movement & Interaction</span>
+                    <svg class="accordion-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="accordion-content" id="movement-accordion">
+
+                    <!-- View Presets -->
+                    <div class="accordion-section-title">View Presets</div>
+                    <div class="preset-grid">
+                        <button class="btn preset-btn" onclick="setViewPreset('top')">Top</button>
+                        <button class="btn preset-btn" onclick="setViewPreset('front')">Front</button>
+                        <button class="btn preset-btn" onclick="setViewPreset('side')">Side</button>
+                        <button class="btn preset-btn" onclick="setViewPreset('iso')">Iso</button>
+                        <button class="btn preset-btn" onclick="setViewPreset('iso2')">Iso 2</button>
+                    </div>
+
+                    <!-- Auto Rotation Section -->
+                    <div class="accordion-section-title">Auto Rotation</div>
+
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="auto-rotate" checked>
+                            Enable Auto Rotation
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Rotation Speed</label>
+                        <div class="range-row">
+                            <input type="range" id="rotation-speed" min="0" max="100" value="20">
+                            <div class="val-wrapper">
+                                <input type="number" id="rotation-speed-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>X-Axis Direction (°)</label>
+                        <div class="range-row">
+                            <input type="range" id="rotation-dir-x" min="-180" max="180" value="0">
+                            <div class="val-wrapper">
+                                <input type="number" id="rotation-dir-x-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Y-Axis Direction (°)</label>
+                        <div class="range-row">
+                            <input type="range" id="rotation-dir-y" min="-180" max="180" value="90">
+                            <div class="val-wrapper">
+                                <input type="number" id="rotation-dir-y-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Z-Axis Direction (°)</label>
+                        <div class="range-row">
+                            <input type="range" id="rotation-dir-z" min="-180" max="180" value="0">
+                            <div class="val-wrapper">
+                                <input type="number" id="rotation-dir-z-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Rotation Mode</label>
+                        <select id="rotation-mode">
+                            <option value="constant">Constant</option>
+                            <option value="pendulum">Pendulum Swing</option>
+                            <option value="random">Random Drift</option>
+                            <option value="orbital">Orbital</option>
+                            <option value="wobble">Wobble</option>
+                            <option value="chaos">Chaotic</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Pendulum Amplitude (°)</label>
+                        <div class="range-row">
+                            <input type="range" id="pendulum-amplitude" min="10" max="180" value="45">
+                            <div class="val-wrapper">
+                                <input type="number" id="pendulum-amplitude-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mouse Drag Section -->
+                    <div class="accordion-section-title">Mouse Drag</div>
+
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="drag-enabled" checked>
+                            Enable Click & Drag
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Drag Sensitivity</label>
+                        <div class="range-row">
+                            <input type="range" id="drag-sensitivity" min="0.1" max="3" step="0.1" value="1">
+                            <div class="val-wrapper">
+                                <input type="number" id="drag-sensitivity-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="drag-inertia" checked>
+                            Momentum / Inertia
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Inertia Decay</label>
+                        <div class="range-row">
+                            <input type="range" id="inertia-decay" min="0.9" max="0.99" step="0.01" value="0.95">
+                            <div class="val-wrapper">
+                                <input type="number" id="inertia-decay-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="auto-bounce-back">
+                            Auto Bounce Back
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Bounce Back Speed</label>
+                        <div class="range-row">
+                            <input type="range" id="bounce-back-speed" min="0.01" max="0.2" step="0.01" value="0.05">
+                            <div class="val-wrapper">
+                                <input type="number" id="bounce-back-speed-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="clamp-rotation">
+                            Clamp X Rotation
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Max X Rotation (°)</label>
+                        <div class="range-row">
+                            <input type="range" id="max-x-rotation" min="15" max="180" value="90">
+                            <div class="val-wrapper">
+                                <input type="number" id="max-x-rotation-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mouseover Section -->
+                    <div class="accordion-section-title">Mouseover / Hover</div>
+
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="hover-enabled">
+                            Enable Hover Interaction
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Hover Mode</label>
+                        <select id="hover-mode">
+                            <option value="tilt">Tilt Toward Mouse</option>
+                            <option value="repel">Repel From Mouse</option>
+                            <option value="follow">Follow Mouse</option>
+                            <option value="parallax">Parallax Effect</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Hover Strength</label>
+                        <div class="range-row">
+                            <input type="range" id="hover-strength" min="0.1" max="3" step="0.1" value="1">
+                            <div class="val-wrapper">
+                                <input type="number" id="hover-strength-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Hover Smoothing</label>
+                        <div class="range-row">
+                            <input type="range" id="hover-smoothing" min="0.01" max="0.3" step="0.01" value="0.08">
+                            <div class="val-wrapper">
+                                <input type="number" id="hover-smoothing-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="hover-affects-noise">
+                            Hover Affects Noise
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Noise Influence</label>
+                        <div class="range-row">
+                            <input type="range" id="hover-noise-influence" min="0" max="50" value="10">
+                            <div class="val-wrapper">
+                                <input type="number" id="hover-noise-influence-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Random Motion Section -->
+                    <div class="accordion-section-title">Random Motion</div>
+
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="random-motion">
+                            Enable Random Motion
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Random Mode</label>
+                        <select id="random-mode">
+                            <option value="gentle">Gentle Drift</option>
+                            <option value="jitter">Jitter</option>
+                            <option value="pulse">Pulse</option>
+                            <option value="earthquake">Earthquake</option>
+                            <option value="breathing">Breathing</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Random Intensity</label>
+                        <div class="range-row">
+                            <input type="range" id="random-intensity" min="0.1" max="5" step="0.1" value="1">
+                            <div class="val-wrapper">
+                                <input type="number" id="random-intensity-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Random Speed</label>
+                        <div class="range-row">
+                            <input type="range" id="random-speed" min="0.1" max="5" step="0.1" value="1">
+                            <div class="val-wrapper">
+                                <input type="number" id="random-speed-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Section -->
+                    <div class="accordion-section-title">Advanced</div>
+
+                    <div class="setting-group">
+                        <label>Easing Function</label>
+                        <select id="easing-function">
+                            <option value="linear">Linear</option>
+                            <option value="easeOut" selected>Ease Out</option>
+                            <option value="easeInOut">Ease In-Out</option>
+                            <option value="elastic">Elastic</option>
+                            <option value="bounce">Bounce</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Smoothing Factor</label>
+                        <div class="range-row">
+                            <input type="range" id="smoothing-factor" min="0.01" max="0.3" step="0.01" value="0.05">
+                            <div class="val-wrapper">
+                                <input type="number" id="smoothing-factor-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="mouse-wheel-zoom">
+                            Mouse Wheel Zoom
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>Zoom Sensitivity</label>
+                        <div class="range-row">
+                            <input type="range" id="zoom-sensitivity" min="0.1" max="3" step="0.1" value="1">
+                            <div class="val-wrapper">
+                                <input type="number" id="zoom-sensitivity-val" class="val-input">
+                                <span class="val-suffix"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="randomize-motion-btn" class="action-btn">🎲 Randomize All Motion</button>
+
+                </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="setting-group">
+                <label>Presets</label>
+                <select id="presets">
+                    <option value="">Select preset...</option>
+                    <option value="organic">Organic Flow</option>
+                    <option value="planet">Planet Surface</option>
+                    <option value="abstract">Abstract Art</option>
+                    <option value="minimal">Minimal</option>
+                    <option value="chaos">Chaos</option>
+                    <option value="neon">Neon Glow</option>
+                </select>
+            </div>
+
+            <button id="reset-btn" class="reset-btn">Reset to Defaults</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
