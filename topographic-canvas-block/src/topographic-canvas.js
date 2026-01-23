@@ -159,6 +159,9 @@ export class TopographicCanvas {
             randomOffsetZ: 0,
             noiseOffset: 0,
             time: 0,
+
+            // Noise scale blending for smooth transitions
+            renderedNoiseScale: null, // Will be initialized from config
             width: 0,
             height: 0,
             centerX: 0,
@@ -239,6 +242,11 @@ export class TopographicCanvas {
     updateConfig(newConfig) {
         // Deep merge or simple spread? Simple spread is safer for performance if structure is flat-ish
         this.config = { ...this.config, ...newConfig };
+
+        // Initialize renderedNoiseScale on first update if not set
+        if (this.state.renderedNoiseScale === null) {
+            this.state.renderedNoiseScale = this.config.noiseScale;
+        }
 
         // Handle view preset - apply base rotations from preset
         if (newConfig.viewPreset !== undefined) {
@@ -603,7 +611,8 @@ export class TopographicCanvas {
     }
 
     applyDisplacement(x, y, z, radius, time) {
-        const scale = this.config.noiseScale;
+        // Use the smoothly interpolated noise scale for smooth animations
+        const scale = this.state.renderedNoiseScale ?? this.config.noiseScale;
         const amp = this.config.noiseAmplitude / 100;
         const modes = this.getDisplacementModes();
         const displaceFn = modes[this.config.mode] || modes.wavy;
@@ -743,7 +752,7 @@ export class TopographicCanvas {
                         const len = Math.sqrt(x * x + y * y + z * z);
                         const nx = x / len, ny = y / len, nz = z / len;
 
-                        const scale = this.config.noiseScale;
+                        const scale = this.state.renderedNoiseScale ?? this.config.noiseScale;
                         const amp = this.config.noiseAmplitude / 100;
                         const modes = this.getDisplacementModes();
                         const displaceFn = modes[this.config.mode] || modes.wavy;
@@ -848,7 +857,7 @@ export class TopographicCanvas {
                         const ny = y / (h / 2 + r);
                         const nz = z / r;
 
-                        const scale = this.config.noiseScale;
+                        const scale = this.state.renderedNoiseScale ?? this.config.noiseScale;
                         const amp = this.config.noiseAmplitude / 100;
                         const modes = this.getDisplacementModes();
                         const displaceFn = modes[this.config.mode] || modes.wavy;
@@ -888,7 +897,7 @@ export class TopographicCanvas {
                         const ny = y / R;
                         const nz = z / width;
 
-                        const scale = this.config.noiseScale;
+                        const scale = this.state.renderedNoiseScale ?? this.config.noiseScale;
                         const amp = this.config.noiseAmplitude / 100;
                         const modes = this.getDisplacementModes();
                         const displaceFn = modes[this.config.mode] || modes.wavy;
@@ -939,7 +948,7 @@ export class TopographicCanvas {
                         const ny = rY / radius;
                         const nz = rZ / radius;
 
-                        const scale = this.config.noiseScale;
+                        const scale = this.state.renderedNoiseScale ?? this.config.noiseScale;
                         const amp = this.config.noiseAmplitude / 100;
                         const modes = this.getDisplacementModes();
                         const displaceFn = modes[this.config.mode] || modes.wavy;
@@ -977,7 +986,7 @@ export class TopographicCanvas {
                         const rZ = z * size;
 
                         // Displacement
-                        const scale = this.config.noiseScale;
+                        const scale = this.state.renderedNoiseScale ?? this.config.noiseScale;
                         const amp = this.config.noiseAmplitude / 100;
                         const modes = this.getDisplacementModes();
                         const displaceFn = modes[this.config.mode] || modes.wavy;
@@ -1153,7 +1162,7 @@ export class TopographicCanvas {
                         // For flat text, maybe just Z displacement looks best?
                         // Or general 3D displacement.
 
-                        const scale = this.config.noiseScale;
+                        const scale = this.state.renderedNoiseScale ?? this.config.noiseScale;
                         const amp = this.config.noiseAmplitude / 100;
                         const modes = this.getDisplacementModes();
                         const displaceFn = modes[this.config.mode] || modes.wavy;
@@ -1789,6 +1798,19 @@ export class TopographicCanvas {
         this.state.rotationX = this.applyEasing(this.state.rotationX, totalTargetX, smoothing);
         this.state.rotationY = this.applyEasing(this.state.rotationY, totalTargetY, smoothing);
         this.state.rotationZ = this.applyEasing(this.state.rotationZ, totalTargetZ, smoothing);
+
+        // Smooth noise scale interpolation to prevent jerky animations
+        // Use a slightly higher smoothing factor for faster response
+        if (this.state.renderedNoiseScale === null) {
+            this.state.renderedNoiseScale = this.config.noiseScale;
+        } else {
+            const noiseScaleSmoothing = Math.min(0.15, smoothing * 3);
+            this.state.renderedNoiseScale = this.applyEasing(
+                this.state.renderedNoiseScale,
+                this.config.noiseScale,
+                noiseScaleSmoothing
+            );
+        }
 
         this.renderShape();
         this.animationFrameId = requestAnimationFrame(this.animate);
