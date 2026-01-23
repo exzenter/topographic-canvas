@@ -292,6 +292,37 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
     };
 
     // ============================================
+    // ACCUMULATING PROPERTIES
+    // ============================================
+    // These properties accumulate over time (e.g., auto-rotation adds to baseRotationX/Y/Z).
+    // They should NOT be reset by keyframes unless a keyframe explicitly sets them.
+    // This prevents auto-rotation from being reset on every scroll event.
+    const ACCUMULATING_PROPERTIES = new Set([
+        'baseRotationX',
+        'baseRotationY',
+        'baseRotationZ',
+        'viewPreset', // View preset also affects base rotation
+    ]);
+
+    // Helper: Check if any keyframe explicitly sets an accumulating property
+    const keyframeExplicitlySetAccumulatingProp = (prop) => {
+        return keyframes.some(kf => {
+            if (kf.settings && kf.settings[prop] !== undefined) return true;
+            if (kf.isAdvanced && kf.startSettings && kf.startSettings[prop] !== undefined) return true;
+            return false;
+        });
+    };
+
+    // Build a filtered base config that excludes accumulating properties
+    // unless at least one keyframe explicitly sets them
+    const filteredBaseConfig = { ...baseConfig };
+    ACCUMULATING_PROPERTIES.forEach(prop => {
+        if (!keyframeExplicitlySetAccumulatingProp(prop)) {
+            delete filteredBaseConfig[prop];
+        }
+    });
+
+    // ============================================
     // PURE POSITION-BASED STATE CALCULATION
     // ============================================
     // This function computes the EXACT canvas state for any scroll position.
@@ -299,8 +330,8 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
     // This ensures clicking scrollbar, fast scrolling, or any jump ALWAYS works.
 
     const computeStateForScrollPosition = (scrollPos) => {
-        // Start with base configuration
-        let state = { ...baseConfig };
+        // Start with filtered base configuration (excludes accumulating properties unless keyframes use them)
+        let state = { ...filteredBaseConfig };
 
         // Track whether we're currently in a shape or text morph
         let inShapeMorph = false;
