@@ -451,7 +451,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                     <ColorPicker
                         color={attributes.bgColor}
                         onChange={(value) => setAttributes({ bgColor: value })}
-                        enableAlpha={false}
+                        enableAlpha={true}
                     />
                 </PanelBody>
 

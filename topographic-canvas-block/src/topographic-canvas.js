@@ -1675,6 +1675,8 @@ export class TopographicCanvas {
         const segments = this.config.lineSegments;
 
         this.ctx.fillStyle = this.config.bgColor;
+        this.ctx.clearRect(0, 0, width, height);
+        this.ctx.fillStyle = this.config.bgColor;
         this.ctx.fillRect(0, 0, width, height);
 
         if (this.config.glowEffect) {
