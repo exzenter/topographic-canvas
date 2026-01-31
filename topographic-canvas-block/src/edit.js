@@ -2,13 +2,12 @@
  * Topographic Canvas Block - Editor Component
  */
 import { __ } from '@wordpress/i18n';
-import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls, PanelColorSettings } from '@wordpress/block-editor';
 import {
     PanelBody,
     SelectControl,
     RangeControl,
     ToggleControl,
-    ColorPicker,
     TextControl,
     __experimentalDivider as Divider,
     Button,
@@ -346,12 +345,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 
                     {attributes.colorMode === 'mono' && (
                         <>
-                            <p>{__('Line Color', 'topographic-canvas-block')}</p>
-                            <ColorPicker
-                                color={attributes.lineColor}
-                                onChange={(value) => setAttributes({ lineColor: value })}
-                                enableAlpha={false}
-                            />
+                            {/* Line Color moved to Color Settings Panel */}
                         </>
                     )}
 
@@ -445,15 +439,29 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                         onChange={(value) => setAttributes({ glowEffect: value })}
                     />
 
-                    <Divider />
 
-                    <p>{__('Background Color', 'topographic-canvas-block')}</p>
-                    <ColorPicker
-                        color={attributes.bgColor}
-                        onChange={(value) => setAttributes({ bgColor: value })}
-                        enableAlpha={true}
-                    />
+
                 </PanelBody>
+
+                { /* Color Settings Panel - Moved here for better visibility and standard UI */}
+                <PanelColorSettings
+                    title={__('Color Settings', 'topographic-canvas-block')}
+                    initialOpen={false}
+                    colorSettings={[
+                        {
+                            value: attributes.bgColor,
+                            onChange: (value) => setAttributes({ bgColor: value }),
+                            label: __('Background Color', 'topographic-canvas-block'),
+                            enableAlpha: true,
+                        },
+                        ...(attributes.colorMode === 'mono' ? [{
+                            value: attributes.lineColor,
+                            onChange: (value) => setAttributes({ lineColor: value }),
+                            label: __('Line Color', 'topographic-canvas-block'),
+                            enableAlpha: false,
+                        }] : []),
+                    ]}
+                />
 
                 { /* Noise Settings Panel */}
                 <PanelBody title={__('Noise & Animation', 'topographic-canvas-block')} initialOpen={false}>
