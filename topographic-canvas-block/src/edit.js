@@ -21,6 +21,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
     const containerRef = useRef(null);
     const canvasInstanceRef = useRef(null);
     const [isKeyframeModalOpen, setIsKeyframeModalOpen] = useState(false);
+    const [sphereSizeTab, setSphereSizeTab] = useState('desktop');
 
     // Set block ID if not set
     useEffect(() => {
@@ -385,6 +386,33 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                         max={300}
                     />
                     <div style={{ marginBottom: '16px', border: '1px solid #e0e0e0', padding: '10px', borderRadius: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                            <span style={{ fontWeight: 500 }}>{__('Sphere Size', 'topographic-canvas-block')}</span>
+                            <ButtonGroup>
+                                <Button
+                                    variant={sphereSizeTab === 'desktop' ? 'primary' : 'secondary'}
+                                    isSmall
+                                    icon="desktop"
+                                    onClick={() => setSphereSizeTab('desktop')}
+                                    label={__('Desktop', 'topographic-canvas-block')}
+                                />
+                                <Button
+                                    variant={sphereSizeTab === 'tablet' ? 'primary' : 'secondary'}
+                                    isSmall
+                                    icon="tablet"
+                                    onClick={() => setSphereSizeTab('tablet')}
+                                    label={__('Tablet', 'topographic-canvas-block')}
+                                />
+                                <Button
+                                    variant={sphereSizeTab === 'mobile' ? 'primary' : 'secondary'}
+                                    isSmall
+                                    icon="smartphone"
+                                    onClick={() => setSphereSizeTab('mobile')}
+                                    label={__('Mobile', 'topographic-canvas-block')}
+                                />
+                            </ButtonGroup>
+                        </div>
+
                         <ToggleControl
                             label={__('Use REM Size', 'topographic-canvas-block')}
                             help={attributes.useSphereSizeRem
@@ -394,22 +422,92 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                             checked={attributes.useSphereSizeRem}
                             onChange={(value) => setAttributes({ useSphereSizeRem: value })}
                         />
-                        {attributes.useSphereSizeRem ? (
-                            <TextControl
-                                label={__('Sphere Size (rem)', 'topographic-canvas-block')}
-                                value={attributes.sphereSizeRem}
-                                onChange={(value) => setAttributes({ sphereSizeRem: parseFloat(value) })}
-                                type="number"
-                                step="0.5"
-                            />
-                        ) : (
-                            <RangeControl
-                                label={__('Sphere Size (px)', 'topographic-canvas-block')}
-                                value={attributes.sphereSize}
-                                onChange={(value) => setAttributes({ sphereSize: value })}
-                                min={100}
-                                max={500}
-                            />
+
+                        {sphereSizeTab === 'desktop' && (
+                            <>
+                                {attributes.useSphereSizeRem ? (
+                                    <TextControl
+                                        label={__('Desktop Size (rem)', 'topographic-canvas-block')}
+                                        value={attributes.sphereSizeRem}
+                                        onChange={(value) => setAttributes({ sphereSizeRem: parseFloat(value) })}
+                                        type="number"
+                                        step="0.5"
+                                    />
+                                ) : (
+                                    <RangeControl
+                                        label={__('Desktop Size (px)', 'topographic-canvas-block')}
+                                        value={attributes.sphereSize}
+                                        onChange={(value) => setAttributes({ sphereSize: value })}
+                                        min={10}
+                                        max={800}
+                                    />
+                                )}
+                                <p style={{ fontSize: '11px', color: '#666', fontStyle: 'italic', marginTop: '5px' }}>
+                                    {__('Default size for screens larger than Tablet breakpoint.', 'topographic-canvas-block')}
+                                </p>
+                            </>
+                        )}
+
+                        {sphereSizeTab === 'tablet' && (
+                            <>
+                                <RangeControl
+                                    label={__('Tablet Breakpoint (px)', 'topographic-canvas-block')}
+                                    value={attributes.breakpointTablet}
+                                    onChange={(value) => setAttributes({ breakpointTablet: value })}
+                                    min={500}
+                                    max={1400}
+                                    help={__('Screen width below which Tablet size applies.', 'topographic-canvas-block')}
+                                />
+                                <Divider />
+                                {attributes.useSphereSizeRem ? (
+                                    <TextControl
+                                        label={__('Tablet Size (rem)', 'topographic-canvas-block')}
+                                        value={attributes.sphereSizeRemTablet}
+                                        onChange={(value) => setAttributes({ sphereSizeRemTablet: parseFloat(value) })}
+                                        type="number"
+                                        step="0.5"
+                                    />
+                                ) : (
+                                    <RangeControl
+                                        label={__('Tablet Size (px)', 'topographic-canvas-block')}
+                                        value={attributes.sphereSizeTablet}
+                                        onChange={(value) => setAttributes({ sphereSizeTablet: value })}
+                                        min={10}
+                                        max={800}
+                                    />
+                                )}
+                            </>
+                        )}
+
+                        {sphereSizeTab === 'mobile' && (
+                            <>
+                                <RangeControl
+                                    label={__('Mobile Breakpoint (px)', 'topographic-canvas-block')}
+                                    value={attributes.breakpointMobile}
+                                    onChange={(value) => setAttributes({ breakpointMobile: value })}
+                                    min={300}
+                                    max={1000}
+                                    help={__('Screen width below which Mobile size applies.', 'topographic-canvas-block')}
+                                />
+                                <Divider />
+                                {attributes.useSphereSizeRem ? (
+                                    <TextControl
+                                        label={__('Mobile Size (rem)', 'topographic-canvas-block')}
+                                        value={attributes.sphereSizeRemMobile}
+                                        onChange={(value) => setAttributes({ sphereSizeRemMobile: parseFloat(value) })}
+                                        type="number"
+                                        step="0.5"
+                                    />
+                                ) : (
+                                    <RangeControl
+                                        label={__('Mobile Size (px)', 'topographic-canvas-block')}
+                                        value={attributes.sphereSizeMobile}
+                                        onChange={(value) => setAttributes({ sphereSizeMobile: value })}
+                                        min={10}
+                                        max={800}
+                                    />
+                                )}
+                            </>
                         )}
                     </div>
                     <RangeControl

@@ -29,6 +29,15 @@ function initTopographicCanvasBlocks() {
             sphereSize: parseInt(container.dataset.sphereSize) || 280,
             useSphereSizeRem: container.dataset.useSphereSizeRem === 'true',
             sphereSizeRem: parseFloat(container.dataset.sphereSizeRem) || 15,
+
+            // Responsive Sphere Sizes
+            sphereSizeTablet: parseInt(container.dataset.sphereSizeTablet) || 200,
+            sphereSizeMobile: parseInt(container.dataset.sphereSizeMobile) || 150,
+            sphereSizeRemTablet: parseFloat(container.dataset.sphereSizeRemTablet) || 10,
+            sphereSizeRemMobile: parseFloat(container.dataset.sphereSizeRemMobile) || 8,
+            breakpointTablet: parseInt(container.dataset.breakpointTablet) || 1024,
+            breakpointMobile: parseInt(container.dataset.breakpointMobile) || 768,
+
             noiseScale: parseFloat(container.dataset.noiseScale) || 2,
             noiseAmplitude: parseInt(container.dataset.noiseAmplitude) || 30,
             animationSpeed: parseInt(container.dataset.animationSpeed) || 50,
@@ -133,6 +142,33 @@ function initTopographicCanvasBlocks() {
 
         // Mark as initialized
         container.dataset.initialized = 'true';
+
+        // Responsive Sphere Size Handling
+        const handleResponsiveUpdate = () => {
+            const width = window.innerWidth;
+            let effectiveSphereSize = config.sphereSize;
+            let effectiveSphereSizeRem = config.sphereSizeRem;
+
+            if (width <= config.breakpointMobile) {
+                effectiveSphereSize = config.sphereSizeMobile;
+                effectiveSphereSizeRem = config.sphereSizeRemMobile;
+            } else if (width <= config.breakpointTablet) {
+                effectiveSphereSize = config.sphereSizeTablet;
+                effectiveSphereSizeRem = config.sphereSizeRemTablet;
+            }
+
+            // Only update if changed (optional, but updateConfig is cheap if diff check inside, or we can just send it)
+            canvasInstance.updateConfig({
+                sphereSize: effectiveSphereSize,
+                sphereSizeRem: effectiveSphereSizeRem
+            });
+        };
+
+        // Listen for resize to update sphere size
+        window.addEventListener('resize', handleResponsiveUpdate, { passive: true });
+
+        // Initial sizing
+        handleResponsiveUpdate();
 
         // Setup sticky center positioning by measuring height and calculating top value
         if (block.classList.contains('sticky-position-center')) {

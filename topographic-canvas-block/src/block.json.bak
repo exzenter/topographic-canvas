@@ -144,30 +144,6 @@
             "type": "number",
             "default": 15
         },
-        "sphereSizeTablet": {
-            "type": "number",
-            "default": 200
-        },
-        "sphereSizeMobile": {
-            "type": "number",
-            "default": 150
-        },
-        "sphereSizeRemTablet": {
-            "type": "number",
-            "default": 10
-        },
-        "sphereSizeRemMobile": {
-            "type": "number",
-            "default": 8
-        },
-        "breakpointTablet": {
-            "type": "number",
-            "default": 1024
-        },
-        "breakpointMobile": {
-            "type": "number",
-            "default": 768
-        },
         "noiseScale": {
             "type": "number",
             "default": 2
