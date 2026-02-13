@@ -206,6 +206,7 @@ export class TopographicCanvas {
         this.animationFrameId = null;
         this.lastTime = 0;
         this.isDestroyed = false;
+        this.isVisible = false; // Start paused, observer will trigger first frame
 
         // Bind methods
         this.animate = this.animate.bind(this);
@@ -225,13 +226,52 @@ export class TopographicCanvas {
     init() {
         this.handleResize();
         this.setupEventListeners();
-        this.animationFrameId = requestAnimationFrame(this.animate);
+        this.setupVisibilityObserver();
+    }
+
+    setupVisibilityObserver() {
+        this.intersectionObserver = new IntersectionObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.isIntersecting) {
+                    this.resumeAnimation();
+                } else {
+                    this.pauseAnimation();
+                }
+            }
+        }, {
+            root: null,
+            rootMargin: '50px',
+            threshold: 0,
+        });
+
+        this.intersectionObserver.observe(this.container);
+    }
+
+    pauseAnimation() {
+        this.isVisible = false;
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+    }
+
+    resumeAnimation() {
+        if (!this.isVisible && !this.isDestroyed) {
+            this.isVisible = true;
+            this.lastTime = performance.now();
+            if (!this.animationFrameId) {
+                this.animationFrameId = requestAnimationFrame(this.animate);
+            }
+        }
     }
 
     destroy() {
         this.isDestroyed = true;
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
+        }
+        if (this.intersectionObserver) {
+            this.intersectionObserver.disconnect();
         }
         this.removeEventListeners();
         if (this.canvas.parentNode) {
@@ -1755,7 +1795,10 @@ export class TopographicCanvas {
     }
 
     animate(currentTime) {
-        if (this.isDestroyed) return;
+        if (this.isDestroyed || !this.isVisible) {
+            this.animationFrameId = null;
+            return;
+        }
 
         const deltaTime = (currentTime - this.lastTime) / 1000;
         this.lastTime = currentTime;

@@ -1,9 +1,23 @@
 // ============================================
 // Topographic Sphere Canvas Animation
 // ============================================
+// Performance optimizations:
+// - Lazy initialization: only starts when canvas is visible
+// - Visibility-based pausing: animation pauses when out of viewport
+// - Web Worker: heavy calculations (noise, shape generation) run off main thread
+// ============================================
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+
+// ============================================
+// Visibility & Worker State
+// ============================================
+let isVisible = true;
+let isInitialized = false;
+let worker = null;
+let pendingFrame = false;
+let lastComputedLines = null;
 
 // ============================================
 // Configuration & State
@@ -948,11 +962,183 @@ function renderShape() {
 }
 
 // ============================================
-// Animation Loop
+// Animation Loop (with Web Worker support)
 // ============================================
 let lastTime = 0;
+let animationFrameId = null;
+
+// Initialize Web Worker
+function initWorker() {
+    if (worker) return;
+
+    // Try to create worker - fall back to main thread if it fails
+    try {
+        // Get the script's directory to construct worker path
+        const scripts = document.getElementsByTagName('script');
+        let workerPath = 'topo-worker.js';
+
+        // Try to find our script and get its path
+        for (const script of scripts) {
+            if (script.src && script.src.includes('script.js')) {
+                workerPath = script.src.replace('script.js', 'topo-worker.js');
+                break;
+            }
+        }
+
+        worker = new Worker(workerPath);
+
+        worker.onmessage = function(e) {
+            if (e.data.type === 'result') {
+                lastComputedLines = e.data;
+                pendingFrame = false;
+                // Draw the result
+                drawComputedLines(e.data.lines, e.data.radius, e.data.numLines);
+            }
+        };
+
+        worker.onerror = function(err) {
+            console.warn('Worker error, falling back to main thread:', err);
+            worker = null;
+        };
+    } catch (err) {
+        console.warn('Could not create worker, using main thread:', err);
+        worker = null;
+    }
+}
+
+// Request computation from worker
+function requestWorkerComputation() {
+    if (!worker || pendingFrame) return false;
+
+    pendingFrame = true;
+
+    // Pre-compute rotation cache values to send
+    const rotation = {
+        cosX: Math.cos(state.rotationX),
+        sinX: Math.sin(state.rotationX),
+        cosY: Math.cos(state.rotationY),
+        sinY: Math.sin(state.rotationY),
+        cosZ: Math.cos(state.rotationZ),
+        sinZ: Math.sin(state.rotationZ)
+    };
+
+    worker.postMessage({
+        type: 'compute',
+        config: {
+            shape: config.shape,
+            mode: config.mode,
+            sphereSize: config.sphereSize,
+            lineDensity: config.lineDensity,
+            lineSegments: config.lineSegments,
+            noiseScale: config.noiseScale,
+            noiseAmplitude: config.noiseAmplitude,
+            // Mode-specific settings
+            wavyOctave2Strength: config.wavyOctave2Strength,
+            wavyOctave3Strength: config.wavyOctave3Strength,
+            wavyOctave2Freq: config.wavyOctave2Freq,
+            wavyOctave3Freq: config.wavyOctave3Freq,
+            wavyTime2: config.wavyTime2,
+            wavyTime3: config.wavyTime3,
+            bandsDensity: config.bandsDensity,
+            bandsNoiseInfluence: config.bandsNoiseInfluence,
+            bandsTimeScale: config.bandsTimeScale,
+            bandsAngleScale: config.bandsAngleScale,
+            bandsYScale: config.bandsYScale,
+            bandsStrength: config.bandsStrength,
+            cellularFreq1: config.cellularFreq1,
+            cellularFreq2: config.cellularFreq2,
+            cellularTime2: config.cellularTime2,
+            cellularAmpBoost: config.cellularAmpBoost,
+            cellularSharpness: config.cellularSharpness,
+            turbulentOctaves: config.turbulentOctaves,
+            turbulentLacunarity: config.turbulentLacunarity,
+            turbulentPersistence: config.turbulentPersistence,
+            turbulentTimeMult: config.turbulentTimeMult,
+            turbulentTimeOffset: config.turbulentTimeOffset,
+            spiralArms: config.spiralArms,
+            spiralTwist: config.spiralTwist,
+            spiralTimeScale: config.spiralTimeScale,
+            spiralNoiseBlend: config.spiralNoiseBlend,
+            spiralStrength: config.spiralStrength,
+            rippleFrequency: config.rippleFrequency,
+            rippleSpeed: config.rippleSpeed,
+            rippleStrength: config.rippleStrength,
+            rippleNoiseBlend: config.rippleNoiseBlend,
+            rippleNoiseTime: config.rippleNoiseTime
+        },
+        state: {
+            time: state.time,
+            centerX: state.centerX,
+            centerY: state.centerY,
+            zoomFactor: state.zoomFactor
+        },
+        rotation: rotation,
+        noiseOffset: state.noiseOffset
+    });
+
+    return true;
+}
+
+// Draw pre-computed lines (runs on main thread, very fast)
+function drawComputedLines(lines, radius, numLines) {
+    const { width, height } = state;
+
+    ctx.fillStyle = config.bgColor;
+    ctx.fillRect(0, 0, width, height);
+
+    if (config.glowEffect) {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = config.colorMode === 'mono' ? config.lineColor : `hsl(${config.hueStart}, 80%, 60%)`;
+    } else {
+        ctx.shadowBlur = 0;
+    }
+
+    ctx.lineWidth = config.lineWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Update color cache
+    updateColorCache();
+
+    // Render all lines
+    for (const line of lines) {
+        const { points, index, avgZ } = line;
+
+        ctx.beginPath();
+
+        let started = false;
+        for (let j = 0; j < points.length; j++) {
+            const p = points[j];
+
+            if (p.z < -radius * 0.3 && config.depthFade && config.shape === 'sphere') {
+                if (started) {
+                    ctx.stroke();
+                    started = false;
+                }
+                continue;
+            }
+
+            if (!started) {
+                ctx.moveTo(p.x, p.y);
+                started = true;
+            } else {
+                ctx.lineTo(p.x, p.y);
+            }
+        }
+
+        const normalizedZ = (avgZ / radius + 1) / 2;
+        ctx.strokeStyle = getColor(normalizedZ, index, numLines);
+        ctx.stroke();
+    }
+}
 
 function animate(currentTime) {
+    // OPTIMIZATION: Skip animation if not visible
+    if (!isVisible) {
+        animationFrameId = null;
+        return;
+    }
+
     const deltaTime = (currentTime - lastTime) / 1000;
     lastTime = currentTime;
 
@@ -1002,8 +1188,35 @@ function animate(currentTime) {
     state.rotationY = applyEasing(state.rotationY, totalTargetY, smoothing);
     state.rotationZ = applyEasing(state.rotationZ, totalTargetZ, smoothing);
 
-    renderShape();
-    requestAnimationFrame(animate);
+    // OPTIMIZATION: Use Web Worker for heavy calculations
+    if (worker) {
+        requestWorkerComputation();
+    } else {
+        // Fallback to main thread rendering
+        renderShape();
+    }
+
+    animationFrameId = requestAnimationFrame(animate);
+}
+
+// Pause animation when not visible
+function pauseAnimation() {
+    isVisible = false;
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+}
+
+// Resume animation when visible
+function resumeAnimation() {
+    if (!isVisible) {
+        isVisible = true;
+        if (!animationFrameId) {
+            lastTime = performance.now();
+            animationFrameId = requestAnimationFrame(animate);
+        }
+    }
 }
 
 // ============================================
@@ -1893,7 +2106,47 @@ function init() {
 
     canvas.addEventListener('wheel', handleWheel, { passive: false });
 
-    requestAnimationFrame(animate);
+    // Initialize the Web Worker
+    initWorker();
+
+    // Start animation
+    lastTime = performance.now();
+    animationFrameId = requestAnimationFrame(animate);
+    isInitialized = true;
 }
 
-init();
+// ============================================
+// IntersectionObserver for Lazy Init & Visibility
+// ============================================
+function setupVisibilityObserver() {
+    const observerOptions = {
+        root: null,
+        rootMargin: '50px',
+        threshold: 0
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Canvas is visible
+                if (!isInitialized) {
+                    // LAZY INIT: First time visible, initialize everything
+                    init();
+                } else {
+                    // Already initialized, just resume
+                    resumeAnimation();
+                }
+            } else {
+                // Canvas is not visible, pause animation
+                if (isInitialized) {
+                    pauseAnimation();
+                }
+            }
+        });
+    }, observerOptions);
+
+    observer.observe(canvas);
+}
+
+// Start with observer instead of immediate init
+setupVisibilityObserver();
