@@ -22,6 +22,73 @@
         }
     }
 
+    // Text overlay grid
+    .topographic-canvas-text-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        z-index: 5;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas:
+            "top    top    top"
+            "left   center right"
+            "bottom bottom bottom";
+        overflow: hidden;
+    }
+
+    .topographic-canvas-text-zone {
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5em;
+        box-sizing: border-box;
+
+        // Reset default margins on paragraphs inside zones
+        p {
+            margin: 0;
+        }
+
+        &.zone-top {
+            grid-area: top;
+            width: 100%;
+        }
+
+        &.zone-bottom {
+            grid-area: bottom;
+            width: 100%;
+        }
+
+        &.zone-left {
+            grid-area: left;
+            height: 100%;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+        }
+
+        &.zone-right {
+            grid-area: right;
+            height: 100%;
+            writing-mode: vertical-rl;
+        }
+
+        &.zone-center {
+            grid-area: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        // Hide empty zones on the frontend
+        &:empty {
+            display: none;
+        }
+    }
+
     // Full-width alignment support
     &.alignfull {
         width: 100vw;

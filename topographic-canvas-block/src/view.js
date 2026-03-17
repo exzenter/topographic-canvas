@@ -9,7 +9,22 @@ import { TopographicCanvas } from './topographic-canvas';
 function initTopographicCanvasBlocks() {
     const blocks = document.querySelectorAll('.wp-block-topographic-canvas-block');
 
+    // Global visibility tracking
+    const blockVisibility = new Map();
+    const visibilityObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            blockVisibility.set(entry.target, entry.isIntersecting);
+        });
+    }, { rootMargin: '100px' });
+
+    // Global Root Font Size Caching
+    let cachedRootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    window.addEventListener('resize', () => {
+        cachedRootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    }, { passive: true });
+
     blocks.forEach((block) => {
+        visibilityObserver.observe(block);
         const container = block.querySelector('.topographic-canvas-container');
 
         if (!container || container.dataset.initialized === 'true') {
@@ -177,14 +192,14 @@ function initTopographicCanvasBlocks() {
 
         // Setup scroll tracking and interaction observers AND keyframes
         const keyframesData = container.dataset.keyframes ? JSON.parse(container.dataset.keyframes) : [];
-        setupScrollAndInteractionTracking(block, canvasInstance, keyframesData);
+        setupScrollAndInteractionTracking(block, canvasInstance, keyframesData, () => blockVisibility.get(block), cachedRootFontSize);
     });
 }
 
 /**
  * Setup scroll measurement, interaction tracking, and keyframe application
  */
-function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
+function setupScrollAndInteractionTracking(block, canvasInstance, keyframes, isBlockVisible, getRootDir) {
     let lastScrollY = window.scrollY;
     let lastRectTop = block.getBoundingClientRect().top;
     let accumulatedDistance = 0;
@@ -201,7 +216,7 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
             case '%':
                 return (numVal / 100) * (document.body.getBoundingClientRect().height - window.innerHeight) + numOffset;
             case 'rem':
-                return numVal * parseFloat(getComputedStyle(document.documentElement).fontSize) + numOffset;
+                return numVal * getRootDir + numOffset;
             case 'element-center':
                 try {
                     const el = document.querySelector(val); // 'val' is selector string here
@@ -501,6 +516,9 @@ function setupScrollAndInteractionTracking(block, canvasInstance, keyframes) {
     };
 
     window.addEventListener('scroll', () => {
+        // Only update if block is in viewport
+        if (!isBlockVisible()) return;
+
         // Keyframe System Update
         if (scrollKeyframes.length > 0) {
             updateCanvas();

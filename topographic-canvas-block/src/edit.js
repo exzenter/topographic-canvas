@@ -2,7 +2,7 @@
  * Topographic Canvas Block - Editor Component
  */
 import { __ } from '@wordpress/i18n';
-import { useBlockProps, InspectorControls, PanelColorSettings } from '@wordpress/block-editor';
+import { useBlockProps, useInnerBlocksProps, InspectorControls, PanelColorSettings } from '@wordpress/block-editor';
 import {
     PanelBody,
     SelectControl,
@@ -67,6 +67,23 @@ export default function Edit({ attributes, setAttributes, clientId }) {
         className: 'wp-block-topographic-canvas-block',
         style: containerStyle,
     });
+
+    // Text overlay zones using InnerBlocks
+    const TEXT_ZONE_TEMPLATE = [
+        [ 'topographic-canvas/text-zone', { position: 'top' } ],
+        [ 'topographic-canvas/text-zone', { position: 'left' } ],
+        [ 'topographic-canvas/text-zone', { position: 'center' } ],
+        [ 'topographic-canvas/text-zone', { position: 'right' } ],
+        [ 'topographic-canvas/text-zone', { position: 'bottom' } ],
+    ];
+
+    const innerBlocksProps = useInnerBlocksProps(
+        { className: 'topographic-canvas-text-overlay' },
+        {
+            template: TEXT_ZONE_TEMPLATE,
+            templateLock: 'all',
+        }
+    );
 
     // Shape options
     const shapeOptions = [
@@ -1153,6 +1170,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                     className="topographic-canvas-container"
                     style={{ width: '100%', height: '100%' }}
                 />
+                <div { ...innerBlocksProps } />
             </div>
         </>
     );

@@ -175,6 +175,7 @@ export class TopographicCanvas {
             isMorphing: false,
             morphSourceShape: 'sphere',
             morphDirection: 1, // 1 = forward, -1 = reverse
+            rootFontSize: 16, // Cached value
         };
 
         // Caches
@@ -224,9 +225,14 @@ export class TopographicCanvas {
     }
 
     init() {
+        this.cacheRootFontSize();
         this.handleResize();
         this.setupEventListeners();
         this.setupVisibilityObserver();
+    }
+
+    cacheRootFontSize() {
+        this.state.rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     }
 
     setupVisibilityObserver() {
@@ -240,7 +246,7 @@ export class TopographicCanvas {
             }
         }, {
             root: null,
-            rootMargin: '50px',
+            rootMargin: '0px',
             threshold: 0,
         });
 
@@ -253,12 +259,14 @@ export class TopographicCanvas {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
         }
+        this.removeGlobalListeners();
     }
 
     resumeAnimation() {
         if (!this.isVisible && !this.isDestroyed) {
             this.isVisible = true;
             this.lastTime = performance.now();
+            this.setupGlobalListeners();
             if (!this.animationFrameId) {
                 this.animationFrameId = requestAnimationFrame(this.animate);
             }
@@ -330,8 +338,7 @@ export class TopographicCanvas {
 
     calculateRadius() {
         if (this.config.useSphereSizeRem) {
-            const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
-            return this.config.sphereSizeRem * rootFontSize;
+            return this.config.sphereSizeRem * this.state.rootFontSize;
         }
         return this.config.sphereSize;
     }
@@ -371,12 +378,26 @@ export class TopographicCanvas {
         this.resizeObserver.observe(this.container);
 
         this.canvas.addEventListener('mousedown', this.handleMouseDown);
-        window.addEventListener('mousemove', this.handleMouseMove);
-        window.addEventListener('mouseup', this.handleMouseUp);
         this.canvas.addEventListener('touchstart', this.handleTouchStart, { passive: true });
         this.canvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
         this.canvas.addEventListener('touchend', this.handleTouchEnd);
         this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
+
+        if (this.isVisible) {
+            this.setupGlobalListeners();
+        }
+    }
+
+    setupGlobalListeners() {
+        // Only attach if not already attached to avoid duplicates
+        this.removeGlobalListeners();
+        window.addEventListener('mousemove', this.handleMouseMove);
+        window.addEventListener('mouseup', this.handleMouseUp);
+    }
+
+    removeGlobalListeners() {
+        window.removeEventListener('mousemove', this.handleMouseMove);
+        window.removeEventListener('mouseup', this.handleMouseUp);
     }
 
     removeEventListeners() {
@@ -384,15 +405,15 @@ export class TopographicCanvas {
             this.resizeObserver.disconnect();
         }
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
-        window.removeEventListener('mousemove', this.handleMouseMove);
-        window.removeEventListener('mouseup', this.handleMouseUp);
         this.canvas.removeEventListener('touchstart', this.handleTouchStart);
         this.canvas.removeEventListener('touchmove', this.handleTouchMove);
         this.canvas.removeEventListener('touchend', this.handleTouchEnd);
         this.canvas.removeEventListener('wheel', this.handleWheel);
+        this.removeGlobalListeners();
     }
 
     handleResize() {
+        this.cacheRootFontSize();
         const rect = this.container.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
 
@@ -427,6 +448,7 @@ export class TopographicCanvas {
         this.state.mouseX = e.clientX;
         this.state.mouseY = e.clientY;
 
+        if (!this.isVisible || this.isDestroyed) return;
         if (!this.state.isDragging || !this.config.dragEnabled) return;
 
         const deltaX = e.clientX - this.state.lastMouseX;
@@ -1662,7 +1684,7 @@ export class TopographicCanvas {
     }
 
     calculateHoverEffect() {
-        if (!this.config.hoverEnabled || this.state.isDragging) {
+        if (!this.isVisible || !this.config.hoverEnabled || this.state.isDragging) {
             this.state.hoverOffsetX *= (1 - this.config.hoverSmoothing);
             this.state.hoverOffsetY *= (1 - this.config.hoverSmoothing);
             return;

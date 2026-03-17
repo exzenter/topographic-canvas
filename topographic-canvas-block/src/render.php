@@ -187,4 +187,9 @@ foreach ( $data_attributes as $key => $value ) {
 
 <div <?php echo $wrapper_attributes; ?>>
     <div class="topographic-canvas-container" style="width: 100%; height: 100%;"<?php echo $data_attrs_string; ?>></div>
+    <?php if ( ! empty( $content ) ) : ?>
+        <div class="topographic-canvas-text-overlay">
+            <?php echo $content; ?>
+        </div>
+    <?php endif; ?>
 </div>
